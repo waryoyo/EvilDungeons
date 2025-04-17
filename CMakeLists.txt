@@ -37,6 +37,13 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(imgui)
 
+file(GLOB IMGUI_SRC
+    ${imgui_SOURCE_DIR}/*.cpp
+)
+
+add_library(imgui STATIC ${IMGUI_SRC})
+target_include_directories(imgui PUBLIC ${imgui_SOURCE_DIR})
+
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS
   src/*.cpp
 )
