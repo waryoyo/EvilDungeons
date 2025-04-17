@@ -21,14 +21,21 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(glfw)
 
-# GLAD
+# GLM
 FetchContent_Declare(
-  glad
-  GIT_REPOSITORY https://github.com/Dav1dde/glad.git
-  GIT_TAG v0.1.36
+  glm
+  GIT_REPOSITORY https://github.com/g-truc/glm.git
+  GIT_TAG 1.0.1 
 )
-FetchContent_MakeAvailable(glad)
+FetchContent_MakeAvailable(glm)
 
+# IMGUI
+FetchContent_Declare(
+  imgui
+  GIT_REPOSITORY https://github.com/ocornut/imgui.git
+  GIT_TAG v1.90.4
+)
+FetchContent_MakeAvailable(imgui)
 
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS
   src/*.cpp
@@ -38,23 +45,31 @@ file(GLOB_RECURSE HEADERS CONFIGURE_DEPENDS
   include/*.hpp include/*.h
 )
 
+add_library(glad STATIC external/glad/src/glad.c)
+target_include_directories(glad PUBLIC external/glad/include)
+
 # Add source to this project's executable.
 add_executable (EvilDungeons ${SOURCES} ${HEADERS})
 
-target_include_directories(${PROJECT_NAME} PRIVATE
+target_include_directories(EvilDungeons PRIVATE
   ${CMAKE_SOURCE_DIR}/include
 )
 
-target_link_libraries(${PROJECT_NAME}
+target_link_libraries(EvilDungeons
+  PRIVATE 
   glfw
   glad
+  glm
+  imgui
 )
+target_include_directories(EvilDungeons PRIVATE ${glad_SOURCE_DIR}/include)
+
 
 if (WIN32)
-  target_link_libraries(${PROJECT_NAME} opengl32)
+  target_link_libraries(${PROJECT_NAME} PRIVATE opengl32)
 else()
   find_package(OpenGL REQUIRED)
-  target_link_libraries(${PROJECT_NAME} OpenGL::GL)
+  target_link_libraries(${PROJECT_NAME} PRIVATE OpenGL::GL)
 endif()
 
 
