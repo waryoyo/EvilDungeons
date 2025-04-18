@@ -367,3 +367,5 @@ _deps
 CMakeCache.txt
 cmake_install.cmake
 Makefile
+
+.vscode/
