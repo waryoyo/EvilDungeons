@@ -1,7 +1,7 @@
 ﻿# CMakeList.txt : CMake project for EvilDungeons, include source and define
 # project specific logic here.
 #
-cmake_minimum_required (VERSION 3.8)
+cmake_minimum_required (VERSION 3.12)
 
 # Enable Hot Reload for MSVC compilers if supported.
 if (POLICY CMP0141)
@@ -79,6 +79,7 @@ else()
   target_link_libraries(${PROJECT_NAME} PRIVATE OpenGL::GL)
 endif()
 
+set(CMAKE_CXX_STANDARD 20)
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET EvilDungeons PROPERTY CXX_STANDARD 20)
