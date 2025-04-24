@@ -65,12 +65,18 @@ static GLuint makeProgram() {
 static glm::mat4 createCubeMVP(const glm::vec3& position, const glm::vec3& scale,
     int width, int height) {
 
-    glm::mat4 model = glm::rotate(
-        glm::translate(glm::mat4(1.0f), position + glm::vec3(0.0f, 0.0f, -static_cast<float>(glfwGetTime())))
+   /* glm::mat4 model = glm::rotate(
+        glm::translate(glm::mat4(1.0f), position + glm::vec3(0.0f, 0.0f, static_cast<float>(glfwGetTime())))
         + glm::scale(glm::mat4(1.0f), scale),
 
         static_cast<float>(glfwGetTime()),
+        glm::vec3(1.0f, 1.0f, 0.0f)); */
+    glm::mat4 model = glm::rotate(
+        glm::translate(glm::mat4(1.0f), position),
+        static_cast<float>(glfwGetTime()),
         glm::vec3(1.0f, 1.0f, 0.0f));
+
+    model = glm::scale(model, scale);
 
     glm::mat4 projection = glm::perspective<float>
         (glm::radians(30.0f), static_cast<float>(width) / height, 0.2f, 20.0f);
@@ -124,7 +130,7 @@ int main()
 
     stbi_set_flip_vertically_on_load(true);
     int width, height, colorChannels;
-    const unsigned char* imageData =
+    unsigned char* imageData =
         stbi_load("assets/textures/H.png", &width, &height, &colorChannels, 0);
 
     if (!imageData) {
@@ -142,7 +148,7 @@ int main()
         imageData);
 
     glGenerateMipmap(GL_TEXTURE_2D);
-    //stbi_image_free(imageData);
+    stbi_image_free(imageData);
 
     GLint mvpLoc = glGetUniformLocation(program, "uMVP");
     //GLint colorLoc = glGetUniformLocation(program, "uColor");
@@ -221,7 +227,7 @@ int main()
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         std::vector<glm::mat4> mvps;
-        mvps.push_back(createCubeMVP({ 0.0f, 0.0f, -5.0f }, { 1.0f ,1.0f, 1.0f }, w, h));
+        mvps.push_back(createCubeMVP({ 0.0f, 0.0f, -5.0f }, { 1.5f ,1.5f, 1.5f }, w, h));
         //mvps.push_back(createCubeMVP({ 2.7f, -1.5f, -14.4f }, { 0.5f ,0.5f, 0.5f }, w, h));
 
         glActiveTexture(GL_TEXTURE0);
