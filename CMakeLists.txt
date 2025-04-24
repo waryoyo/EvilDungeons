@@ -53,6 +53,9 @@ file(GLOB_RECURSE HEADERS CONFIGURE_DEPENDS
 )
 
 add_library(glad STATIC external/glad/src/glad.c)
+add_library(stb_image STATIC external/stb/stb_image.cpp)
+
+target_include_directories(stb_image PUBLIC external/stb)
 target_include_directories(glad PUBLIC external/glad/include)
 
 # Add source to this project's executable.
@@ -68,6 +71,7 @@ target_link_libraries(EvilDungeons
   glad
   glm
   imgui
+  stb_image
 )
 target_include_directories(EvilDungeons PRIVATE ${glad_SOURCE_DIR}/include)
 
