@@ -61,6 +61,12 @@ target_include_directories(glad PUBLIC external/glad/include)
 # Add source to this project's executable.
 add_executable (EvilDungeons ${SOURCES} ${HEADERS})
 
+add_custom_command(TARGET EvilDungeons POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E copy_directory
+          ${CMAKE_SOURCE_DIR}/assets
+          $<TARGET_FILE_DIR:EvilDungeons>/assets
+)
+
 target_include_directories(EvilDungeons PRIVATE
   ${CMAKE_SOURCE_DIR}/include
 )
