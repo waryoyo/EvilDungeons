@@ -41,15 +41,24 @@ void Shader::use() const
 
 void Shader::setMat4(const std::string& name, const glm::mat4& value) const
 {
-	GLint mat4 = glGetUniformLocation(ID, name.c_str());
-	glUniformMatrix4fv(mat4, 1, GL_FALSE, glm::value_ptr(value));
+	glUniformMatrix4fv(glGetUniformLocation(ID, name.c_str()), 1, GL_FALSE, glm::value_ptr(value));
 }
 
 void Shader::setInt(const std::string& name, GLuint value) const
 {
-	GLint i = glGetUniformLocation(ID, name.c_str());
-	glUniform1i(i, value);
+	glUniform1i(glGetUniformLocation(ID, name.c_str()), value);
 }
+
+void Shader::setBool(const std::string& name, GLboolean value) const
+{
+	glUniform1i(glGetUniformLocation(ID, name.c_str()), value);
+}
+
+void Shader::setFloat(const std::string& name, GLfloat value) const
+{
+	glUniform1f(glGetUniformLocation(ID, name.c_str()), value);
+}
+
 
 std::string Shader::loadFile(const std::string& path)
 {

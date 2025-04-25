@@ -2,6 +2,7 @@
 //
 
 #include "main.h"
+#include <engine/graphics/texture.hpp>
 
 using namespace std;
 
@@ -10,7 +11,6 @@ struct Vertex {
     glm::vec3 pos;
     glm::vec2 uv;
 };
-
 
 static glm::mat4 createCubeMVP(const glm::vec3& position, const glm::vec3& scale,
     int width, int height) {
@@ -60,16 +60,16 @@ int main()
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_MULTISAMPLE);
 
-    GLuint texture;
+    /*GLuint texture;
     glGenTextures(1, &texture);
     glBindTexture(GL_TEXTURE_2D, texture);
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);*/
 
-    stbi_set_flip_vertically_on_load(true);
+  /*  stbi_set_flip_vertically_on_load(true);
     int width, height, colorChannels;
     unsigned char* imageData =
         stbi_load("assets/textures/H.png", &width, &height, &colorChannels, 0);
@@ -90,8 +90,8 @@ int main()
 
     glGenerateMipmap(GL_TEXTURE_2D);
     stbi_image_free(imageData);
-
-
+*/
+    Texture texture = Texture("H.png");
     Shader shader = Shader("basic.vert", "basic.frag");
 
     static constexpr Vertex vertices[] = {
@@ -170,8 +170,9 @@ int main()
 
         mvps.push_back(createCubeMVP({ 0.0f, 0.0f, -5.0f }, { 1.5f ,1.5f, 1.5f }, w, h));
 
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, texture);
+      /*  glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, texture);*/
+        texture.bind(0);
         shader.setInt("uTex", 0);
 
         for (const auto& MVP : mvps) {
