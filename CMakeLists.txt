@@ -67,6 +67,12 @@ add_custom_command(TARGET EvilDungeons POST_BUILD
           $<TARGET_FILE_DIR:EvilDungeons>/assets
 )
 
+add_custom_command(TARGET EvilDungeons POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E copy_directory
+          ${CMAKE_SOURCE_DIR}/shaders
+          $<TARGET_FILE_DIR:EvilDungeons>/shaders
+)
+
 target_include_directories(EvilDungeons PRIVATE
   ${CMAKE_SOURCE_DIR}/include
 )

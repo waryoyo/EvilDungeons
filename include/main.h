@@ -13,4 +13,5 @@
 
 #include <stb_image.h>
 
+#include <engine/graphics/shader.hpp>
 

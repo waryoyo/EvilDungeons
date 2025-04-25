@@ -1,0 +1,78 @@
+#include <engine/graphics/shader.hpp>
+
+std::string Shader::s_basePath = "shaders/";
+
+void Shader::SetBasePath(const std::string& basePath)
+{
+	s_basePath = basePath;
+}
+
+const std::string& Shader::GetBasePath()
+{
+	return s_basePath;
+}
+
+Shader::Shader(const std::string& vertexPath, const std::string& fragmentPath)
+{
+	std::string vertexSrc = loadFile(s_basePath + vertexPath);
+	std::string fragmentSrc = loadFile(s_basePath + fragmentPath);
+
+	GLuint vertexShader = compileShader(GL_VERTEX_SHADER, vertexSrc);
+	GLuint fragmentShader = compileShader(GL_FRAGMENT_SHADER, fragmentSrc);
+
+	ID = glCreateProgram();
+	glAttachShader(ID, vertexShader);
+	glAttachShader(ID, fragmentShader);
+	glLinkProgram(ID);
+	
+	glDeleteShader(vertexShader);
+	glDeleteShader(fragmentShader);
+}
+
+Shader::~Shader()
+{
+	glDeleteProgram(ID);
+}
+
+void Shader::use() const
+{
+	glUseProgram(ID);
+}
+
+void Shader::setMat4(const std::string& name, const glm::mat4& value) const
+{
+	GLint mat4 = glGetUniformLocation(ID, name.c_str());
+	glUniformMatrix4fv(mat4, 1, GL_FALSE, glm::value_ptr(value));
+}
+
+void Shader::setInt(const std::string& name, GLuint value) const
+{
+	GLint i = glGetUniformLocation(ID, name.c_str());
+	glUniform1i(i, value);
+}
+
+std::string Shader::loadFile(const std::string& path)
+{
+	std::ifstream in(path);
+	if (!in) {
+		std::cerr << "dead";
+		exit(0);
+	}
+
+	std::stringstream buf;
+	buf << in.rdbuf();
+	return buf.str();
+}
+
+GLuint Shader::compileShader(GLenum type, const std::string& src)
+{
+	GLuint shader = glCreateShader(type);
+	const GLchar* srcChar = src.c_str();
+
+	glShaderSource(shader, 1, &srcChar, nullptr);
+	glCompileShader(shader);
+
+	// TODO: add error checks here
+
+	return shader;
+}
