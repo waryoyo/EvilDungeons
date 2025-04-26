@@ -2,15 +2,19 @@
 
 #include <string>
 #include <GLFW/glfw3.h>
+#include <glm/glm.hpp>
+
 
 class Window {
 public:
-	Window(int width, int height, const std::string& title);
+	Window(const std::string& title, int width, int height);
 	~Window();
 
-	void update();
+	void pollEvents();
+	void swapBuffers();
+	bool shouldClose() const;
+	glm::uvec2 getSize() const;
 
-	bool shouldWindowClose() const;
 	GLFWwindow* GetGLFWWindow() const;
 
 private:

@@ -12,6 +12,19 @@ struct Vertex {
     glm::vec2 uv;
 };
 
+static int screenWidth = 1280;
+static int screenHeight = 720;
+
+static float lastMouseX = 1280/2;
+static float lastMouseY = 720/2;
+static bool firstMouse = true;
+static float yaw = -90.0f, pitch = 0.0f;
+static const float sensitivity = 0.1f;
+
+static glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
+static glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
+static glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
+
 static glm::mat4 createCubeMVP(const glm::vec3& position, const glm::vec3& scale,
     int width, int height) {
 
@@ -25,11 +38,60 @@ static glm::mat4 createCubeMVP(const glm::vec3& position, const glm::vec3& scale
     glm::mat4 projection = glm::perspective<float>
         (glm::radians(45.0f), static_cast<float>(width) / height, 0.2f, 20.0f);
 
-    glm::mat4 view = glm::translate(glm::mat4(1.0f), glm::vec3(0, 0, -5));
+    //glm::mat4 view = glm::translate(glm::mat4(1.0f), glm::vec3(0, 0, -5));
+    glm::mat4 view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
 
     return projection * view * model;
 }
 
+static void mouseCallback(GLFWwindow* window, double xpos, double ypos) {
+    glm::vec3 direction;
+
+    
+    if (firstMouse) {
+        lastMouseX = xpos;
+        lastMouseY = ypos;
+        firstMouse = false;
+    }
+
+    float xoffset = xpos - lastMouseX;
+    float yoffset = lastMouseY - ypos;
+
+    lastMouseX = xpos;
+    lastMouseY = ypos;
+
+    xoffset *= sensitivity;
+    yoffset *= sensitivity;
+
+    yaw += xoffset;
+    pitch += yoffset;
+
+    pitch = glm::clamp(pitch, -89.0f, 89.0f);
+
+    direction.x = glm::cos(glm::radians(yaw)) * glm::cos(glm::radians(pitch));
+    direction.y = glm::sin(glm::radians(pitch));
+    direction.z = glm::sin(glm::radians(yaw)) * glm::cos(glm::radians(pitch));
+
+    cameraFront = glm::normalize(direction);
+}
+
+static void processInput(GLFWwindow* window, float deltaTime) {
+    const float speed = 5.0f * deltaTime;
+    const glm::vec3 cameraRight = glm::normalize(glm::cross(cameraUp, cameraFront));
+
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+        cameraPos += speed * cameraFront;
+    }
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+        cameraPos -= speed * cameraFront;
+    }
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+        cameraPos += speed * cameraRight;
+    }
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+        cameraPos -= speed * cameraRight;
+    }
+}
 
 int main()
 {
@@ -43,7 +105,7 @@ int main()
     glfwWindowHint(GLFW_SAMPLES, 4);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    GLFWwindow* window = glfwCreateWindow(1280, 720, "Dark Dungeon", nullptr, nullptr);
+    GLFWwindow* window = glfwCreateWindow(screenWidth, screenHeight, "Dark Dungeon", nullptr, nullptr);
     if (!window) {
         std::cerr << "Window creation failed!\n";
         glfwTerminate();
@@ -51,6 +113,8 @@ int main()
     }
 
     glfwMakeContextCurrent(window);
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    glfwSetCursorPosCallback(window, mouseCallback);
 
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
         std::cerr << "Failed to initialize GLAD\n";
@@ -60,37 +124,6 @@ int main()
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_MULTISAMPLE);
 
-    /*GLuint texture;
-    glGenTextures(1, &texture);
-    glBindTexture(GL_TEXTURE_2D, texture);
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);*/
-
-  /*  stbi_set_flip_vertically_on_load(true);
-    int width, height, colorChannels;
-    unsigned char* imageData =
-        stbi_load("assets/textures/H.png", &width, &height, &colorChannels, 0);
-
-    if (!imageData) {
-        std::cerr << "GRRR";
-        exit(0);
-    }
-
-    glTexImage2D(GL_TEXTURE_2D,
-        0,
-        GL_RGB,
-        width, height,
-        0,
-        GL_RGB,
-        GL_UNSIGNED_BYTE,
-        imageData);
-
-    glGenerateMipmap(GL_TEXTURE_2D);
-    stbi_image_free(imageData);
-*/
     Texture texture = Texture("H.png");
     Shader shader = Shader("basic.vert", "basic.frag");
 
@@ -157,8 +190,15 @@ int main()
 
     glVertexArrayElementBuffer(VAO, EBO);
 
+    float lastFrameTime = 0.0f;
+
+
     while (!glfwWindowShouldClose(window)) {
         int w, h;
+        float currentFrameTime = static_cast<float>(glfwGetTime());
+        float deltaTime = currentFrameTime - lastFrameTime;
+        lastFrameTime = currentFrameTime;
+
         glfwGetFramebufferSize(window, &w, &h);
         glViewport(0, 0, w, h);
         shader.use();
@@ -166,12 +206,11 @@ int main()
         glClearColor(1.0f, 1.0f, 1.0f, 1.0f); 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        std::vector<glm::mat4> mvps;
+        processInput(window, deltaTime);
 
+        std::vector<glm::mat4> mvps;
         mvps.push_back(createCubeMVP({ 0.0f, 0.0f, -5.0f }, { 1.5f ,1.5f, 1.5f }, w, h));
 
-      /*  glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, texture);*/
         texture.bind(0);
         shader.setInt("uTex", 0);
 
@@ -180,8 +219,6 @@ int main()
             shader.setMat4("uMVP", MVP);
             glBindVertexArray(VAO);
             glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, nullptr);
-
-
         }
         glfwSwapBuffers(window);
         glfwPollEvents();
