@@ -47,7 +47,6 @@ static glm::mat4 createCubeMVP(const glm::vec3& position, const glm::vec3& scale
 static void mouseCallback(GLFWwindow* window, double xpos, double ypos) {
     glm::vec3 direction;
 
-    
     if (firstMouse) {
         lastMouseX = xpos;
         lastMouseY = ypos;
@@ -76,7 +75,12 @@ static void mouseCallback(GLFWwindow* window, double xpos, double ypos) {
 }
 
 static void processInput(GLFWwindow* window, float deltaTime) {
-    const float speed = 5.0f * deltaTime;
+    float speed = 5.0f * deltaTime;
+
+    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+        speed *= 4.0f;
+    }
+
     const glm::vec3 cameraRight = glm::normalize(glm::cross(cameraUp, cameraFront));
 
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
