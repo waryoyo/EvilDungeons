@@ -14,4 +14,5 @@
 #include <stb_image.h>
 
 #include <engine/graphics/shader.hpp>
-
+#include <engine/graphics/texture.hpp>
+#include <engine/core/camera.hpp>
