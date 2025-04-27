@@ -11,18 +11,15 @@ struct Vertex {
     glm::vec2 uv;
 };
 
+static Camera cameraObject = Camera();
+
 static int screenWidth = 1280;
 static int screenHeight = 720;
 
 static float lastMouseX = 1280/2;
 static float lastMouseY = 720/2;
-static bool firstMouse = true;
-static float yaw = -90.0f, pitch = 0.0f;
-static const float sensitivity = 0.1f;
+static bool isPaused = false;
 
-static glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
-static glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
-static glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
 
 static glm::mat4 createCubeMVP(const glm::vec3& position, const glm::vec3& scale,
     int width, int height) {
@@ -38,7 +35,7 @@ static glm::mat4 createCubeMVP(const glm::vec3& position, const glm::vec3& scale
         (glm::radians(45.0f), static_cast<float>(width) / height, 0.2f, 1000.0f);
 
     //glm::mat4 view = glm::translate(glm::mat4(1.0f), glm::vec3(0, 0, -5));
-    glm::mat4 view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
+    glm::mat4 view = glm::lookAt(cameraObject.getCameraPos(), cameraObject.getCameraPos() + cameraObject.getCameraFront(), cameraObject.getCameraUp());
 
     return projection * view * model;
 }
@@ -46,55 +43,30 @@ static glm::mat4 createCubeMVP(const glm::vec3& position, const glm::vec3& scale
 
 
 static void mouseCallback(GLFWwindow* window, double xpos, double ypos) {
-    glm::vec3 direction;
-
-    if (firstMouse) {
-        lastMouseX = xpos;
-        lastMouseY = ypos;
-        firstMouse = false;
+    if (isPaused) {
+        return;
     }
 
-    float xoffset = xpos - lastMouseX;
-    float yoffset = lastMouseY - ypos;
 
-    lastMouseX = xpos;
-    lastMouseY = ypos;
 
-    xoffset *= sensitivity;
-    yoffset *= sensitivity;
+    cameraObject.handleMouse(window, xpos, ypos);
 
-    yaw += xoffset;
-    pitch += yoffset;
-
-    pitch = glm::clamp(pitch, -89.0f, 89.0f);
-
-    direction.x = glm::cos(glm::radians(yaw)) * glm::cos(glm::radians(pitch));
-    direction.y = glm::sin(glm::radians(pitch));
-    direction.z = glm::sin(glm::radians(yaw)) * glm::cos(glm::radians(pitch));
-
-    cameraFront = glm::normalize(direction);
 }
 
 static void processInput(GLFWwindow* window, float deltaTime) {
-    float speed = 5.0f * deltaTime;
-
-    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
-        speed *= 4.0f;
+    if (not isPaused) {
+        cameraObject.handleKeyboard(window, deltaTime);
     }
-
-    const glm::vec3 cameraRight = glm::normalize(glm::cross(cameraUp, cameraFront));
-
-    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-        cameraPos += speed * cameraFront;
-    }
-    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-        cameraPos -= speed * cameraFront;
-    }
-    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-        cameraPos += speed * cameraRight;
-    }
-    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-        cameraPos -= speed * cameraRight;
+    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+        if (not isPaused) {
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+            isPaused = true;
+        }
+        else {
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+            isPaused = false;
+            cameraObject.setFirstMouse(true);
+        }
     }
 }
 
@@ -116,6 +88,7 @@ int main()
         glfwTerminate();
         return -1;
     }
+
 
     glfwMakeContextCurrent(window);
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
