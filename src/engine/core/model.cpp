@@ -5,11 +5,11 @@ void Mesh::draw() const
 {
 
 
-	for (const auto& [type, texture] : textures) {
+	/*for (const auto& [type, texture] : textures) {
 		texture.bind(0);
 		glBindVertexArray(VAO);
 		glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, nullptr);
-	}
+	}*/
 
 	//if (texture)
 	//	texture->bind(0);
@@ -167,7 +167,7 @@ Mesh Model::processMesh(aiMesh* aMesh, aiMaterial* aMaterial)
 	mesh.VAO = VAO;
 	mesh.EBO = EBO;
 	mesh.indexCount = indices.size();
-	mesh.texture = loadTexture(aMaterial);
+	//mesh.textures = textures;
 	
 	return mesh;
 }

@@ -18,6 +18,7 @@ public:
 	~Shader();
 
 	void use() const;
+	void setVec3(const std::string& name, const glm::vec3& value) const;
 	void setMat4(const std::string& name, const glm::mat4& matrix) const;
 	void setInt(const std::string& name, GLuint value) const;
 	void setBool(const std::string& name, GLboolean value) const;

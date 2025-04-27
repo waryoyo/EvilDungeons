@@ -24,13 +24,13 @@ public:
 				 // not the objects itself
 					
 
-	Texture(Texture& texture) {
+	/*Texture(Texture& texture) {
 		id = texture.id;
 
 		m_width = texture.m_width;
 		m_height = texture.m_height;
 		m_channels = texture.m_channels;
-	}
+	}*/
 
 	void bind(GLuint unit) const;
 	void unbind() const;

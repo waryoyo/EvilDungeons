@@ -9,6 +9,7 @@ using namespace std;
 struct Vertex {
     glm::vec3 pos;
     glm::vec2 uv;
+    glm::vec3 normal;
 };
 
 static Camera cameraObject = Camera();
@@ -21,15 +22,18 @@ static float lastMouseY = 720/2;
 static bool isPaused = false;
 
 
-static glm::mat4 createCubeMVP(const glm::vec3& position, const glm::vec3& scale,
-    int width, int height) {
-
-    //glm::mat4 model = glm::rotate(
-    //    glm::translate(glm::mat4(1.0f), position),
-    //    static_cast<float>(glfwGetTime()),
-    //    glm::vec3(1.0f, 1.0f, 0.0f));
-    glm::mat4 model = glm::translate(glm::mat4(1.0f), position);
+static glm::mat4 createCubeModel(const glm::vec3& position, const glm::vec3& scale) {
+    glm::mat4 model = glm::rotate(
+        glm::translate(glm::mat4(1.0f), position),
+        static_cast<float>(glfwGetTime()),
+        glm::vec3(1.0f, 1.0f, 0.0f));
     model = glm::scale(model, scale);
+
+    return model;
+}
+
+static glm::mat4 createCubeMVP(const glm::mat4 model,
+    int width, int height) {
 
     glm::mat4 projection = glm::perspective<float>
         (glm::radians(45.0f), static_cast<float>(width) / height, 0.2f, 1000.0f);
@@ -46,9 +50,6 @@ static void mouseCallback(GLFWwindow* window, double xpos, double ypos) {
     if (isPaused) {
         return;
     }
-
-
-
     cameraObject.handleMouse(window, xpos, ypos);
 
 }
@@ -103,40 +104,49 @@ int main()
     glEnable(GL_MULTISAMPLE);
 
     Texture texture = Texture("H.png");
-    Shader shader = Shader("basic.vert", "basic.frag");
-    Model sonic = Model("sonic_the_hedgehog/scene.gltf");
-    Shader sonicShader = Shader("model/basic.vert", "model/basic.frag");
+    Shader shader = Shader("super_cube/basic.vert", "super_cube/basic.frag");
+    Shader lightShader = Shader("light/light.vert", "light/light.frag");
+
+
+    //Model sonic = Model("sonic_the_hedgehog/scene.gltf");
+    //Shader sonicShader = Shader("model/basic.vert", "model/basic.frag");
 
     static constexpr Vertex vertices[] = {
-        {{-0.5f,-0.5f,-0.5f},{0.0f,0.0f}},
-        {{ 0.5f,-0.5f,-0.5f},{1.0f,0.0f}},
-        {{ 0.5f, 0.5f,-0.5f},{1.0f,1.0f}},
-        {{-0.5f, 0.5f,-0.5f},{0.0f,1.0f}},
+        // front face
+        {{-0.5f, -0.5f,  0.5f}, {0.0f, 0.0f}, {0.0f, 0.0f, 1.0f}},
+        {{ 0.5f, -0.5f,  0.5f}, {1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}},
+        {{ 0.5f,  0.5f,  0.5f}, {1.0f, 1.0f}, {0.0f, 0.0f, 1.0f}},
+        {{-0.5f,  0.5f,  0.5f}, {0.0f, 1.0f}, {0.0f, 0.0f, 1.0f}},
 
-        {{-0.5f,-0.5f, 0.5f},{1.0f,0.0f}},
-        {{ 0.5f,-0.5f, 0.5f},{0.0f,0.0f}},
-        {{ 0.5f, 0.5f, 0.5f},{0.0f,1.0f}},
-        {{-0.5f, 0.5f, 0.5f},{1.0f,1.0f}},
+        // back face
+        {{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f}, {0.0f, 0.0f, -1.0f}},
+        {{ 0.5f, -0.5f, -0.5f}, {0.0f, 0.0f}, {0.0f, 0.0f, -1.0f}},
+        {{ 0.5f,  0.5f, -0.5f}, {0.0f, 1.0f}, {0.0f, 0.0f, -1.0f}},
+        {{-0.5f,  0.5f, -0.5f}, {1.0f, 1.0f}, {0.0f, 0.0f, -1.0f}},
 
-        {{-0.5f,-0.5f,-0.5f},{0.0f,1.0f}},
-        {{ 0.5f,-0.5f,-0.5f},{1.0f,1.0f}},
-        {{ 0.5f,-0.5f, 0.5f},{1.0f,0.0f}},
-        {{-0.5f,-0.5f, 0.5f},{0.0f,0.0f}},
+        // bottom face
+        {{-0.5f, -0.5f, -0.5f}, {0.0f, 1.0f}, {0.0f, -1.0f, 0.0f}},
+        {{ 0.5f, -0.5f, -0.5f}, {1.0f, 1.0f}, {0.0f, -1.0f, 0.0f}},
+        {{ 0.5f, -0.5f,  0.5f}, {1.0f, 0.0f}, {0.0f, -1.0f, 0.0f}},
+        {{-0.5f, -0.5f,  0.5f}, {0.0f, 0.0f}, {0.0f, -1.0f, 0.0f}},
 
-        {{-0.5f, 0.5f,-0.5f},{0.0f,0.0f}},
-        {{ 0.5f, 0.5f,-0.5f},{1.0f,0.0f}},
-        {{ 0.5f, 0.5f, 0.5f},{1.0f,1.0f}},
-        {{-0.5f, 0.5f, 0.5f},{0.0f,1.0f}},
+        // top face
+        {{-0.5f,  0.5f, -0.5f}, {0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}},
+        {{ 0.5f,  0.5f, -0.5f}, {1.0f, 0.0f}, {0.0f, 1.0f, 0.0f}},
+        {{ 0.5f,  0.5f,  0.5f}, {1.0f, 1.0f}, {0.0f, 1.0f, 0.0f}},
+        {{-0.5f,  0.5f,  0.5f}, {0.0f, 1.0f}, {0.0f, 1.0f, 0.0f}},
 
-        {{-0.5f,-0.5f,-0.5f},{1.0f,0.0f}},
-        {{-0.5f, 0.5f,-0.5f},{1.0f,1.0f}},
-        {{-0.5f, 0.5f, 0.5f},{0.0f,1.0f}},
-        {{-0.5f,-0.5f, 0.5f},{0.0f,0.0f}},
+        // right face
+        {{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f}, {-1.0f, 0.0f, 0.0f}},
+        {{-0.5f,  0.5f, -0.5f}, {1.0f, 1.0f}, {-1.0f, 0.0f, 0.0f}},
+        {{-0.5f,  0.5f,  0.5f}, {0.0f, 1.0f}, {-1.0f, 0.0f, 0.0f}},
+        {{-0.5f, -0.5f,  0.5f}, {0.0f, 0.0f}, {-1.0f, 0.0f, 0.0f}},
 
-        {{ 0.5f,-0.5f,-0.5f},{0.0f,0.0f}},
-        {{ 0.5f, 0.5f,-0.5f},{0.0f,1.0f}},
-        {{ 0.5f, 0.5f, 0.5f},{1.0f,1.0f}},
-        {{ 0.5f,-0.5f, 0.5f},{1.0f,0.0f}},
+        // left face
+        {{ 0.5f, -0.5f, -0.5f}, {0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}},
+        {{ 0.5f,  0.5f, -0.5f}, {0.0f, 1.0f}, {1.0f, 0.0f, 0.0f}},
+        {{ 0.5f,  0.5f,  0.5f}, {1.0f, 1.0f}, {1.0f, 0.0f, 0.0f}},
+        {{ 0.5f, -0.5f,  0.5f}, {1.0f, 0.0f}, {1.0f, 0.0f, 0.0f}},
     };
 
     static constexpr unsigned int indices[] = {
@@ -159,6 +169,7 @@ int main()
     glNamedBufferData(EBO, sizeof(indices), indices, GL_STATIC_DRAW);
 
     glVertexArrayVertexBuffer(VAO, 0, VBO, 0, sizeof(Vertex));
+
     glVertexArrayAttribFormat(VAO, 0, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, pos));
     glVertexArrayAttribBinding(VAO, 0, 0);
     glEnableVertexArrayAttrib(VAO, 0);
@@ -167,6 +178,10 @@ int main()
     glVertexArrayAttribFormat(VAO, 1, 2, GL_FLOAT, GL_FALSE, offsetof(Vertex, uv));
     glVertexArrayAttribBinding(VAO, 1, 0);
     glEnableVertexArrayAttrib(VAO, 1);
+
+    glVertexArrayAttribFormat(VAO, 2, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, normal));
+    glVertexArrayAttribBinding(VAO, 2, 0);
+    glEnableVertexArrayAttrib(VAO, 2);
 
     glVertexArrayElementBuffer(VAO, EBO);
 
@@ -181,29 +196,44 @@ int main()
 
         glfwGetFramebufferSize(window, &w, &h);
         glViewport(0, 0, w, h);
-        //shader.use();
-        sonicShader.use();
+        shader.use();
 
-        glClearColor(1.0f, 1.0f, 1.0f, 1.0f); 
+        glClearColor(0.2f, 0.1f, 0.1f, 1.0f); 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         processInput(window, deltaTime);
 
         std::vector<glm::mat4> mvps;
-        mvps.push_back(createCubeMVP({ 0.0f, 0.0f, -5.0f }, { 1.5f ,1.5f, 1.5f }, w, h));
-        mvps.push_back(createCubeMVP({ 1.0f, 4.0f, -2.0f }, { 0.5f ,0.5f, 0.5f }, w, h));
 
-        //texture.bind(0);
+        std::vector<glm::mat4> models;
+
+        models.push_back(createCubeModel({ 0.0f, 0.0f, -5.0f }, { 1.5f ,1.5f, 1.5f }));
+
+        glm::vec3 lightPos = { 0.0f, 5.0f, -10.0f };
+        glm::vec3 lightColor = { 0.5f, 0.5f, 0.75f };
+
+        texture.bind(0);
         shader.setInt("uTex", 0);
-        shader.setMat4("uMVP", createCubeMVP({ 0.0f, 0.0f, 0.0f }, { 1.0f ,1.0f, 1.0f }, w, h));
+        shader.setVec3("lightColor", lightColor);
+        shader.setVec3("lightPos", lightPos);
 
-        sonic.draw();
-       /* for (const auto& MVP : mvps) {
-
-            shader.setMat4("uMVP", MVP);
+        for (const auto& model : models) {
+            shader.setMat4("uModel", model);
+            shader.setMat4("uMVP", createCubeMVP(model, w, h));
             glBindVertexArray(VAO);
             glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, nullptr);
-        }*/
+        }
+
+        glm::mat4 lightModel = createCubeModel(lightPos, { 1.0f ,1.0f, 1.0f });
+        glm::mat4 lightMVP = createCubeMVP(lightModel, w, h);
+        lightShader.use();
+        lightShader.setMat4("uMVP", lightMVP);
+        lightShader.setVec3("uObjectColor", lightColor);
+
+        glBindVertexArray(VAO);
+        glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, nullptr);
+
+
         glfwSwapBuffers(window);
         glfwPollEvents();
 

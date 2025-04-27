@@ -16,6 +16,13 @@
 
 #include <engine/graphics/texture.hpp>
 
+enum class TextureType {
+    Diffuse,
+    Specular,
+    Normal,
+    Height
+};
+
 struct MVertex {
     glm::vec3 position;
     glm::vec3 normal;
@@ -35,12 +42,6 @@ struct Mesh {
     void draw() const;
 };
 
-enum class TextureType {
-    Diffuse,
-    Specular,
-    Normal,
-    Height
-};
 
 class Model {
 public:
