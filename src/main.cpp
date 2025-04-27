@@ -2,7 +2,6 @@
 //
 
 #include "main.h"
-#include <engine/graphics/texture.hpp>
 
 using namespace std;
 
@@ -28,21 +27,23 @@ static glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
 static glm::mat4 createCubeMVP(const glm::vec3& position, const glm::vec3& scale,
     int width, int height) {
 
-    glm::mat4 model = glm::rotate(
-        glm::translate(glm::mat4(1.0f), position),
-        static_cast<float>(glfwGetTime()),
-        glm::vec3(1.0f, 1.0f, 0.0f));
-
+    //glm::mat4 model = glm::rotate(
+    //    glm::translate(glm::mat4(1.0f), position),
+    //    static_cast<float>(glfwGetTime()),
+    //    glm::vec3(1.0f, 1.0f, 0.0f));
+    glm::mat4 model = glm::translate(glm::mat4(1.0f), position);
     model = glm::scale(model, scale);
 
     glm::mat4 projection = glm::perspective<float>
-        (glm::radians(45.0f), static_cast<float>(width) / height, 0.2f, 20.0f);
+        (glm::radians(45.0f), static_cast<float>(width) / height, 0.2f, 1000.0f);
 
     //glm::mat4 view = glm::translate(glm::mat4(1.0f), glm::vec3(0, 0, -5));
     glm::mat4 view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
 
     return projection * view * model;
 }
+
+
 
 static void mouseCallback(GLFWwindow* window, double xpos, double ypos) {
     glm::vec3 direction;
@@ -130,6 +131,8 @@ int main()
 
     Texture texture = Texture("H.png");
     Shader shader = Shader("basic.vert", "basic.frag");
+    Model sonic = Model("sonic_the_hedgehog/scene.gltf");
+    Shader sonicShader = Shader("model/basic.vert", "model/basic.frag");
 
     static constexpr Vertex vertices[] = {
         {{-0.5f,-0.5f,-0.5f},{0.0f,0.0f}},
@@ -205,7 +208,8 @@ int main()
 
         glfwGetFramebufferSize(window, &w, &h);
         glViewport(0, 0, w, h);
-        shader.use();
+        //shader.use();
+        sonicShader.use();
 
         glClearColor(1.0f, 1.0f, 1.0f, 1.0f); 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -214,16 +218,19 @@ int main()
 
         std::vector<glm::mat4> mvps;
         mvps.push_back(createCubeMVP({ 0.0f, 0.0f, -5.0f }, { 1.5f ,1.5f, 1.5f }, w, h));
+        mvps.push_back(createCubeMVP({ 1.0f, 4.0f, -2.0f }, { 0.5f ,0.5f, 0.5f }, w, h));
 
-        texture.bind(0);
+        //texture.bind(0);
         shader.setInt("uTex", 0);
+        shader.setMat4("uMVP", createCubeMVP({ 0.0f, 0.0f, 0.0f }, { 1.0f ,1.0f, 1.0f }, w, h));
 
-        for (const auto& MVP : mvps) {
+        sonic.draw();
+       /* for (const auto& MVP : mvps) {
 
             shader.setMat4("uMVP", MVP);
             glBindVertexArray(VAO);
             glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, nullptr);
-        }
+        }*/
         glfwSwapBuffers(window);
         glfwPollEvents();
 

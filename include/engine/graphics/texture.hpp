@@ -19,7 +19,18 @@ public:
 		GLenum magFilter = GL_LINEAR
 	);
 
-	~Texture();
+	~Texture();  // This is a huge problem i need to make some sort of manager for textures incase
+			     // they need to be reused without deleting them, manager should manage lifetime
+				 // not the objects itself
+					
+
+	Texture(Texture& texture) {
+		id = texture.id;
+
+		m_width = texture.m_width;
+		m_height = texture.m_height;
+		m_channels = texture.m_channels;
+	}
 
 	void bind(GLuint unit) const;
 	void unbind() const;

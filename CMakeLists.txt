@@ -37,6 +37,15 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(imgui)
 
+# ASSIMP
+FetchContent_Declare(
+  assimp
+  GIT_REPOSITORY https://github.com/assimp/assimp.git
+  GIT_TAG v5.4.3
+)
+
+FetchContent_MakeAvailable(assimp)
+
 file(GLOB IMGUI_SRC
     ${imgui_SOURCE_DIR}/*.cpp
 )
@@ -84,6 +93,7 @@ target_link_libraries(EvilDungeons
   glm
   imgui
   stb_image
+  assimp::assimp
 )
 target_include_directories(EvilDungeons PRIVATE ${glad_SOURCE_DIR}/include)
 

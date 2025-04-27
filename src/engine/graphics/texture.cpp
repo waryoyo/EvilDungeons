@@ -2,6 +2,16 @@
 
 std::string Texture::s_basePath = "assets/textures/";
 
+void Texture::SetBasePath(const std::string& basePath)
+{
+    s_basePath = basePath;
+}
+
+const std::string& Texture::GetBasePath()
+{
+    return s_basePath;
+}
+
 Texture::Texture(const std::string& texturePath, GLenum wrapS, GLenum wrapT, GLenum minFilter, GLenum magFilter)
 {
     glGenTextures(1, &id);
