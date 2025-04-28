@@ -176,6 +176,15 @@ int main()
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_MULTISAMPLE);
 
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
+
+    ImGui::StyleColorsDark();
+
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    ImGui_ImplOpenGL3_Init("#version 460");
+
     Texture texture = Texture("H.png");
     Shader shader = Shader("super_cube/basic.vert", "super_cube/basic.frag");
     Shader lightShader = Shader("light/light.vert", "light/light.frag");
@@ -186,11 +195,25 @@ int main()
     GLuint VAO, VBO, EBO;
     createCubeVAO(VAO, VBO, EBO);
 
+    glm::vec3 lightPos = { 0.0f, 3.0f, -10.0f };
+    glm::vec3 lightColor = { 0.8f, 0.8f, 0.75f };
+
+    glm::vec3 materialAmbient = glm::vec3(0.2f);
+    glm::vec3 materialDiffuse = glm::vec3(1.0f);
+    glm::vec3 materialSpecular = glm::vec3(0.5f);
+    GLfloat shininess = 32.0f;
+
+    glm::vec3 lightAmbient = glm::vec3(0.7f);
+    glm::vec3 lightDiffuse = glm::vec3(0.8f);
+    glm::vec3 lightSpecular = glm::vec3(0.4f);
+
     float lastFrameTime = 0.0f;
 
-
-
     while (!glfwWindowShouldClose(window)) {
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+
         int w, h;
         float currentFrameTime = static_cast<float>(glfwGetTime());
         float deltaTime = currentFrameTime - lastFrameTime;
@@ -211,23 +234,20 @@ int main()
 
         models.push_back(createCubeModel({ 0.0f, 0.0f, -5.0f }, { 1.5f ,1.5f, 1.5f }));
 
-        glm::vec3 lightPos = { 0.0f, 3.0f, -10.0f };
-        glm::vec3 lightColor = { 0.8f, 0.8f, 0.75f };
-
         texture.bind(0);
         shader.setInt("uTex", 0);
         shader.setVec3("lightColor", lightColor);
         shader.setVec3("lightPos", lightPos);
         shader.setVec3("cameraPos", cameraObject.getCameraPos());
 
-        shader.setVec3("material.ambient", glm::vec3(0.2f));
-        shader.setVec3("material.diffuse", glm::vec3(1.0f));
-        shader.setVec3("material.specular", glm::vec3(0.5f));
-        shader.setFloat("material.shininess", 32.0f);
+        shader.setVec3("material.ambient", materialAmbient);
+        shader.setVec3("material.diffuse", materialDiffuse);
+        shader.setVec3("material.specular", materialSpecular);
+        shader.setFloat("material.shininess", shininess);
 
-        shader.setVec3("light.ambient", glm::vec3(0.7f));
-        shader.setVec3("light.diffuse", glm::vec3(0.8f));
-        shader.setVec3("light.specular", glm::vec3(0.4f));
+        shader.setVec3("light.ambient", lightAmbient);
+        shader.setVec3("light.diffuse", lightDiffuse);
+        shader.setVec3("light.specular", lightSpecular);
 
         for (const auto& model : models) {
             shader.setMat4("uModel", model);
@@ -245,6 +265,25 @@ int main()
         glBindVertexArray(VAO);
         glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, nullptr);
 
+        ImGui::Begin("Settings");
+        ImGui::SliderFloat3("Light Position", &lightPos.x, -20.0f, 20.0f);
+
+        ImGui::ColorEdit3("Light Color", &lightColor.x);
+
+        ImGui::SliderFloat3("Material Ambient", &materialAmbient.x, 0.0f, 1.0f);
+        ImGui::SliderFloat3("Material Diffuse", &materialDiffuse.x, 0.0f, 1.0f);
+        ImGui::SliderFloat3("Material Specular", &materialSpecular.x, 0.0f, 1.0f);
+        ImGui::SliderFloat("Material Shininess", &shininess, 1.0f, 128.0f);
+
+
+        ImGui::SliderFloat3("Light Ambient", &lightAmbient.x, 0.0f, 1.0f);
+        ImGui::SliderFloat3("Light Diffuse", &lightDiffuse.x, 0.0f, 1.0f);
+        ImGui::SliderFloat3("Light Specular", &lightAmbient.x, 0.0f, 1.0f);
+
+        ImGui::End();
+
+        ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
         glfwSwapBuffers(window);
         glfwPollEvents();

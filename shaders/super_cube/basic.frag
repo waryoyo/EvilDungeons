@@ -13,9 +13,7 @@ struct Material {
 }; 
 uniform Material material;
 
-struct Light {
-    vec3 position;
-  
+struct Light {  
     vec3 ambient;
     vec3 diffuse;
     vec3 specular;
