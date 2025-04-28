@@ -50,8 +50,15 @@ file(GLOB IMGUI_SRC
     ${imgui_SOURCE_DIR}/*.cpp
 )
 
-add_library(imgui STATIC ${IMGUI_SRC})
-target_include_directories(imgui PUBLIC ${imgui_SOURCE_DIR})
+set(IMGUI_BACKENDS
+    ${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.cpp
+    ${imgui_SOURCE_DIR}/backends/imgui_impl_opengl3.cpp
+)
+
+add_library(imgui STATIC ${IMGUI_SRC} ${IMGUI_BACKENDS})
+target_include_directories(imgui PUBLIC ${imgui_SOURCE_DIR}
+${imgui_SOURCE_DIR}/backends
+${glfw_SOURCE_DIR}/include)
 
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS
   src/*.cpp
@@ -111,10 +118,13 @@ if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET EvilDungeons PROPERTY CXX_STANDARD 20)
 endif()
 
-target_compile_options(assimp PRIVATE
-  -Wno-unknown-pragmas
-  -Wno-error=unknown-pragmas
-)
+if (NOT MSVC)
+  target_compile_options(assimp PRIVATE
+    -Wno-unknown-pragmas
+    -Wno-error=unknown-pragmas
+  )
+endif()
+
 add_compile_definitions(__USE_MINGW_ANSI_STDIO=1)
 
 
