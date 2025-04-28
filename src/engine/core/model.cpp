@@ -190,4 +190,5 @@ std::vector<Texture> Model::loadTextures(aiMaterial* material, aiTextureType typ
 		std::string texPath = s_basePath + directory + "/" + str.C_Str();
 		textures.push_back(Texture(texPath));
 	}
+	return {};
 }

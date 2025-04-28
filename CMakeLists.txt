@@ -111,4 +111,11 @@ if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET EvilDungeons PROPERTY CXX_STANDARD 20)
 endif()
 
+target_compile_options(assimp PRIVATE
+  -Wno-unknown-pragmas
+  -Wno-error=unknown-pragmas
+)
+add_compile_definitions(__USE_MINGW_ANSI_STDIO=1)
+
+
 # TODO: Add tests and install targets if needed.
