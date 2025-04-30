@@ -1,23 +1,49 @@
 #version 460 core
 in vec2 oUV;
+in vec3 Normal;
+in vec3 FragPos;
+
 out vec4 FragColor;
 
-const int MAX_DIFFUSE  = 8;
-const int MAX_SPECULAR = 4;
-const int MAX_NORMAL = 4; 
-const int MAX_HEIGHT = 2;
+uniform sampler2D texture_diffuse;
+uniform sampler2D texture_specular;
+uniform bool useSpecular;
 
-uniform sampler2D texture_diffuse[MAX_DIFFUSE];
-uniform sampler2D texture_specular[MAX_SPECULAR];
-uniform sampler2D texture_normal[MAX_SPECULAR];
-uniform sampler2D texture_height[MAX_SPECULAR];
+uniform float shininess;
 
-uniform int diffuseCount;
-uniform int specularCount;
-uniform int normalCount;
-uniform int heightCount;
+struct Light {  
+    vec3 ambient;
+    vec3 diffuse;
+    vec3 specular;
+};
+uniform Light light; 
+
+uniform vec3 lightColor;
+uniform vec3 lightPos; 
+uniform vec3 cameraPos;
 
 void main()
 {
-    FragColor = texture(uTex, oUV);
+    vec4 texColor = texture(texture_diffuse, oUV);
+    vec3 ambient = texColor.rgb * light.ambient * lightColor;
+
+    vec3 norm = normalize(Normal);
+    vec3 lightDir = normalize(lightPos - FragPos);
+    float diff = max(dot(lightDir, norm), 0.0);
+    vec3 diffuse = texColor.rgb * light.diffuse * diff * lightColor;
+
+    vec3 viewDir = normalize(cameraPos - FragPos);
+    vec3 reflectDir = reflect(-lightDir, norm);
+
+    vec3 specularColor = vec3(1.0);
+    if (useSpecular)
+    {
+        specularColor = texture(texture_specular, oUV).rgb;
+    }
+
+    float specular = pow(max(dot(viewDir, reflectDir), 0.0), shininess);
+
+    vec3 final = ambient + diffuse + specular * specularColor;
+
+    FragColor = vec4(final, texColor.a);
 }

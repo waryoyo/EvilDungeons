@@ -1,21 +1,34 @@
 #include <engine/core/model.hpp>
 
 
-void Mesh::draw() const
+void Mesh::draw(const Shader& shader) const
 {
+	glBindVertexArray(VAO);
 
+	for (size_t i = 0; i < textures.size(); i++){
 
-	/*for (const auto& [type, texture] : textures) {
-		texture.bind(0);
-		glBindVertexArray(VAO);
+		if (!textures[i].second)
+			continue;
+
+		textures[i].second->bind(0);
+		switch (textures[i].first)
+		{
+		case TextureType::Diffuse:
+			shader.setInt("texture_diffuse", 0);
+			break;
+		case TextureType::Specular:
+			shader.setBool("useSpecular", true);
+			shader.setInt("texture_specular", i);
+			break;
+		}
 		glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, nullptr);
-	}*/
+	}
 
-	//if (texture)
-	//	texture->bind(0);
+	/*if (texture)
+		texture->bind(0);
 
-	//glBindVertexArray(VAO);
-	//glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, nullptr);
+	glBindVertexArray(VAO);
+	glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, nullptr);*/
 }
 
 std::string Model::s_basePath = "assets/models/";
@@ -30,10 +43,10 @@ const std::string& Model::GetBasePath()
 	return s_basePath;
 }
 
-void Model::draw() const
+void Model::draw(const Shader& shader) const
 {
 	for (const auto& mesh : meshes)
-		mesh.draw();
+		mesh.draw(shader);
 	
 }
 
@@ -74,7 +87,7 @@ Mesh Model::processMesh(aiMesh* aMesh, aiMaterial* aMaterial)
 {
 	std::vector<MVertex> vertices;
 	std::vector<GLuint> indices;
-	std::vector<Texture> textures;
+	std::vector<std::pair<TextureType, std::shared_ptr<Texture>>> textures;
 
 	vertices.reserve(aMesh->mNumVertices);
 
@@ -142,53 +155,82 @@ Mesh Model::processMesh(aiMesh* aMesh, aiMaterial* aMaterial)
 	glVertexArrayAttribBinding(VAO, 0, 0);
 	glEnableVertexArrayAttrib(VAO, 0);
 
-	glVertexArrayAttribFormat(VAO, 1, 3, GL_FLOAT, GL_FALSE, offsetof(MVertex, normal));
+	glVertexArrayAttribFormat(VAO, 1, 2, GL_FLOAT, GL_FALSE, offsetof(MVertex, uv));
 	glVertexArrayAttribBinding(VAO, 1, 0);
 	glEnableVertexArrayAttrib(VAO, 1);
 
-	glVertexArrayAttribFormat(VAO, 2, 2, GL_FLOAT, GL_FALSE, offsetof(MVertex, uv));
+	glVertexArrayAttribFormat(VAO, 2, 3, GL_FLOAT, GL_FALSE, offsetof(MVertex, normal));
 	glVertexArrayAttribBinding(VAO, 2, 0);
 	glEnableVertexArrayAttrib(VAO, 2);
 
-	std::vector<Texture> diffuseMaps = loadTextures(aMaterial, aiTextureType_DIFFUSE);
-	copy(diffuseMaps.begin(), diffuseMaps.end(), back_inserter(textures));
+	std::shared_ptr<Texture> diffuseMaps = loadTextures(aMaterial, aiTextureType_DIFFUSE);
+	if (diffuseMaps)
+		textures.emplace_back(TextureType::Diffuse, diffuseMaps);
 
-	std::vector<Texture> specularMaps = loadTextures(aMaterial, aiTextureType_SPECULAR);
-	copy(specularMaps.begin(), specularMaps.end(), back_inserter(textures));
+	std::shared_ptr<Texture> specularMaps = loadTextures(aMaterial, aiTextureType_SPECULAR);
+	if (specularMaps)
+		textures.emplace_back(TextureType::Specular, specularMaps);
 
-	std::vector<Texture> normalMaps = loadTextures(aMaterial, aiTextureType_HEIGHT);
-	copy(normalMaps.begin(), normalMaps.end(), back_inserter(textures));
+	std::shared_ptr<Texture> normalMaps = loadTextures(aMaterial, aiTextureType_HEIGHT);
+	if (normalMaps)
+		textures.emplace_back(TextureType::Normal, normalMaps);
 
-	std::vector<Texture> heightMaps = loadTextures(aMaterial, aiTextureType_AMBIENT);
-	copy(heightMaps.begin(), heightMaps.end(), back_inserter(textures));
+	std::shared_ptr<Texture> heightMaps = loadTextures(aMaterial, aiTextureType_AMBIENT);
+	if (heightMaps)
+		textures.emplace_back(TextureType::Height, heightMaps);
 
+
+
+
+//	std::vector<Texture> diffuseMaps = loadTextures(aMaterial, aiTextureType_DIFFUSE);
+//	copy(diffuseMaps.begin(), diffuseMaps.end(), back_inserter(textures));
+//
+//	std::vector<Texture> specularMaps = loadTextures(aMaterial, aiTextureType_SPECULAR);
+//	copy(specularMaps.begin(), specularMaps.end(), back_inserter(textures));
+//
+//	std::vector<Texture> normalMaps = loadTextures(aMaterial, aiTextureType_HEIGHT);
+//	copy(normalMaps.begin(), normalMaps.end(), back_inserter(textures));
+//
+//	std::vector<Texture> heightMaps = loadTextures(aMaterial, aiTextureType_AMBIENT);
+//	copy(heightMaps.begin(), heightMaps.end(), back_inserter(textures));
+//
 	Mesh mesh;
 	mesh.VBO = VBO;
 	mesh.VAO = VAO;
 	mesh.EBO = EBO;
 	mesh.indexCount = indices.size();
-	//mesh.textures = textures;
-	
+	mesh.textures = textures;
+
 	return mesh;
 }
 
-std::vector<Texture> Model::loadTextures(aiMaterial* material, aiTextureType type) const
+std::shared_ptr<Texture> Model::loadTextures(aiMaterial* material, aiTextureType type) const
 {
 
 	if (material->GetTextureCount(type) <= 0)
-		return {};
+		return nullptr;
 
-	std::vector<Texture> textures;
-	textures.reserve(material->GetTextureCount(type));
+	aiString str;
+	std::string directory = path.substr(0, path.find_last_of("/\\"));
+	material->GetTexture(aiTextureType_DIFFUSE, 0, &str);
+	std::string texPath = s_basePath + directory + "/" + str.C_Str();
+	return std::make_shared<Texture>(texPath);
 
-	// TODO: should introduce some sort of cache to avoid reloading of textures very important
+	//if (material->GetTextureCount(type) <= 0)
+	//	return {};
 
-	for (int i = 0; i < material->GetTextureCount(type); i++) {
-		aiString str;
-		std::string directory = path.substr(0, path.find_last_of("/\\"));
-		material->GetTexture(aiTextureType_DIFFUSE, 0, &str);
-		std::string texPath = s_basePath + directory + "/" + str.C_Str();
-		textures.push_back(Texture(texPath));
-	}
-	return {};
+	//std::vector<Texture> textures;
+	//textures.reserve(material->GetTextureCount(type));
+
+	//// TODO: should introduce some sort of cache to avoid reloading of textures very important
+
+	//for (int i = 0; i < material->GetTextureCount(type); i++) {
+	//	aiString str;
+	//	std::string directory = path.substr(0, path.find_last_of("/\\"));
+	//	material->GetTexture(aiTextureType_DIFFUSE, 0, &str);
+	//	std::string texPath = s_basePath + directory + "/" + str.C_Str();
+	//	textures.push_back(Texture(texPath));
+	//}
+	// 
+	//return textures;
 }

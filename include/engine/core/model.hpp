@@ -14,6 +14,7 @@
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 
+#include <engine/graphics/shader.hpp>
 #include <engine/graphics/texture.hpp>
 
 enum class TextureType {
@@ -37,9 +38,12 @@ struct MVertex {
 struct Mesh {
     GLuint VBO, VAO, EBO;
     GLsizei indexCount;
-    std::vector<std::pair<TextureType ,Texture>> textures;
+    std::shared_ptr<Texture> texture;
+    std::vector<std::pair<TextureType, std::shared_ptr<Texture>>> textures;
 
-    void draw() const;
+    //std::vector<std::pair<TextureType ,Texture>> textures;
+
+    void draw(const Shader& shader) const;
 };
 
 
@@ -48,14 +52,14 @@ public:
     static void SetBasePath(const std::string& basePath);
     static const std::string& GetBasePath();
 
-    void draw() const;
+    void draw(const Shader& shader) const;
 
     Model(const std::string& modelPath);
 
 private:
     void loadModel(const std::string& path);
     Mesh processMesh(aiMesh* aMesh, aiMaterial* aMaterial);
-    std::vector<Texture> loadTextures(aiMaterial* material, aiTextureType type) const;
+    std::shared_ptr<Texture> loadTextures(aiMaterial* material, aiTextureType type) const;
     static std::string s_basePath;
 
     std::string path;

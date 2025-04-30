@@ -23,14 +23,17 @@ static bool isPaused = false;
 
 
 static glm::mat4 createCubeModel(const glm::vec3& position, const glm::vec3& scale) {
-    glm::mat4 model = glm::rotate(
+    /*glm::mat4 model = glm::rotate(
         glm::translate(glm::mat4(1.0f), position),
         static_cast<float>(glfwGetTime()),
-        glm::vec3(1.0f, 1.0f, 0.0f));
+        glm::vec3(1.0f, 1.0f, 0.0f));*/
+
+    glm::mat4 model = glm::translate(glm::mat4(1.0f), position);
     model = glm::scale(model, scale);
 
     return model;
 }
+
 
 static glm::mat4 createCubeMVP(const glm::mat4 model,
     int width, int height) {
@@ -186,12 +189,13 @@ int main()
     ImGui_ImplOpenGL3_Init("#version 460");
 
     Texture texture = Texture("H.png");
-    Shader shader = Shader("super_cube/basic.vert", "super_cube/basic.frag");
+    //Shader shader = Shader("super_cube/basic.vert", "super_cube/basic.frag");
     Shader lightShader = Shader("light/light.vert", "light/light.frag");
 
 
-    //Model sonic = Model("sonic_the_hedgehog/scene.gltf");
-    //Shader sonicShader = Shader("model/basic.vert", "model/basic.frag");
+    Shader shader = Shader("model/basic.vert", "model/basic.frag");
+    Model sonic = Model("sonic_the_hedgehog/scene.gltf");
+
     GLuint VAO, VBO, EBO;
     createCubeVAO(VAO, VBO, EBO);
 
@@ -232,9 +236,9 @@ int main()
 
         std::vector<glm::mat4> models;
 
-        models.push_back(createCubeModel({ 0.0f, 0.0f, -5.0f }, { 1.5f ,1.5f, 1.5f }));
+        //models.push_back(createCubeModel({ 0.0f, 0.0f, -5.0f }, { 1.5f ,1.5f, 1.5f }));
 
-        texture.bind(0);
+        //texture.bind(0);
         shader.setInt("uTex", 0);
         shader.setVec3("lightColor", lightColor);
         shader.setVec3("lightPos", lightPos);
@@ -243,18 +247,26 @@ int main()
         shader.setVec3("material.ambient", materialAmbient);
         shader.setVec3("material.diffuse", materialDiffuse);
         shader.setVec3("material.specular", materialSpecular);
-        shader.setFloat("material.shininess", shininess);
+        shader.setFloat("shininess", shininess);
 
         shader.setVec3("light.ambient", lightAmbient);
         shader.setVec3("light.diffuse", lightDiffuse);
         shader.setVec3("light.specular", lightSpecular);
+        
+        auto model = createCubeModel({ 0.0f, 0.0f, -5.0f }, { 1.5f ,1.5f, 1.5f });
 
-        for (const auto& model : models) {
-            shader.setMat4("uModel", model);
-            shader.setMat4("uMVP", createCubeMVP(model, w, h));
-            glBindVertexArray(VAO);
-            glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, nullptr);
-        }
+        shader.setMat4("uModel", model);
+        shader.setMat4("uMVP", createCubeMVP(model, w, h));
+
+        sonic.draw(shader);
+
+        //for (const auto& model : models) {
+         
+
+        //    glBindVertexArray(VAO);
+
+            //glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, nullptr);
+        //}
 
         glm::mat4 lightModel = createCubeModel(lightPos, { 1.0f ,1.0f, 1.0f });
         glm::mat4 lightMVP = createCubeMVP(lightModel, w, h);
@@ -275,10 +287,9 @@ int main()
         ImGui::SliderFloat3("Material Specular", &materialSpecular.x, 0.0f, 1.0f);
         ImGui::SliderFloat("Material Shininess", &shininess, 1.0f, 128.0f);
 
-
         ImGui::SliderFloat3("Light Ambient", &lightAmbient.x, 0.0f, 1.0f);
         ImGui::SliderFloat3("Light Diffuse", &lightDiffuse.x, 0.0f, 1.0f);
-        ImGui::SliderFloat3("Light Specular", &lightAmbient.x, 0.0f, 1.0f);
+        ImGui::SliderFloat3("Light Specular", &lightSpecular.x, 0.0f, 1.0f);
 
         ImGui::End();
 

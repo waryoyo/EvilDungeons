@@ -18,29 +18,48 @@ Texture::Texture(const std::string& texturePath, GLenum wrapS, GLenum wrapT, GLe
     glBindTexture(GL_TEXTURE_2D, id);
 
     glTexParameteri(GL_TEXTURE_2D, wrapS, GL_REPEAT);
+
     glTexParameteri(GL_TEXTURE_2D, wrapT, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, minFilter, GL_LINEAR_MIPMAP_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, magFilter, GL_LINEAR);
 
-    stbi_set_flip_vertically_on_load(true);
-    int width, height, colorChannels;
-
     const std::string fullPath = s_basePath + texturePath;
 
     unsigned char* imageData =
-        stbi_load(fullPath.c_str(), &width, &height, &colorChannels, 0);
+        stbi_load(fullPath.c_str(), &m_width, &m_height, &m_channels, 0);
 
     if (!imageData) {
         std::cerr << "GRRR";
         exit(0);
     }
+    GLenum format;
+    GLenum internalFormat;
+
+    switch (m_channels) {
+    case 1:
+        format = GL_RED;
+        internalFormat = GL_RED;
+        break;
+    case 3:
+        format = GL_RGB;
+        internalFormat = GL_RGB;
+        break;
+    case 4:
+        format = GL_RGBA;
+        internalFormat = GL_RGBA;
+        break;
+    default:
+        format = GL_RGB;
+        internalFormat = GL_RGB;
+        break;
+    }
 
     glTexImage2D(GL_TEXTURE_2D,
         0,
-        GL_RGB,
-        width, height,
+        internalFormat,
+        m_width, m_height,
         0,
-        GL_RGB,
+        format,
         GL_UNSIGNED_BYTE,
         imageData);
 
