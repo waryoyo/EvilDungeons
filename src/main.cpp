@@ -224,7 +224,7 @@ int main()
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         if (!isPaused) {
-            cameraObject.handleKeyboard(window, deltaTime);
+            cameraObject.handleKeyboard(inputManager, deltaTime);
         }
         std::vector<glm::mat4> mvps;
 
