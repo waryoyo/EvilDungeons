@@ -18,5 +18,6 @@
 #include <engine/graphics/shader.hpp>
 #include <engine/graphics/texture.hpp>
 #include <engine/core/camera.hpp>
+#include <engine/core/inputManager.hpp>
 // #include <engine/core/cube.hpp>
 #include <engine/core/model.hpp>

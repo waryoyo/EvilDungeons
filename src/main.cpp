@@ -130,30 +130,6 @@ static void mouseCallback(GLFWwindow* window, double xpos, double ypos) {
 
 }
 
-static void processInput(GLFWwindow* window, float deltaTime) {
-    static bool escapePressedLastFrame = false;
-
-    bool escapePressed = glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS;
-
-    if (escapePressed && !escapePressedLastFrame) {
-        if (!isPaused) {
-            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-            isPaused = true;
-        } else {
-            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-            isPaused = false;
-            cameraObject.setFirstMouse(true);
-        }
-    }
-
-    escapePressedLastFrame = escapePressed;
-
-    if (!isPaused) {
-        cameraObject.handleKeyboard(window, deltaTime);
-    }
-}
-
-
 int main()
 {
     if (!glfwInit()) {
@@ -203,6 +179,8 @@ int main()
     Shader shader = Shader("model/basic.vert", "model/basic.frag");
     Model sonic = Model("sonic_the_hedgehog/scene.gltf");
 
+    InputManager inputManager;
+
     GLuint VAO, VBO, EBO;
     
     createCubeVAO(VAO, VBO, EBO);
@@ -222,6 +200,13 @@ int main()
     float lastFrameTime = 0.0f;
 
     while (!glfwWindowShouldClose(window)) {
+
+        inputManager.update(window);
+
+        if (inputManager.wasKeyPressed(GLFW_KEY_P)) {
+            isPaused = !isPaused;
+        }
+
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
@@ -238,8 +223,9 @@ int main()
         glClearColor(0.2f, 0.1f, 0.1f, 1.0f); 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        processInput(window, deltaTime);
-
+        if (!isPaused) {
+            cameraObject.handleKeyboard(window, deltaTime);
+        }
         std::vector<glm::mat4> mvps;
 
         std::vector<glm::mat4> models;
@@ -357,6 +343,17 @@ if (isPaused) {
 
         glfwSwapBuffers(window);
         glfwPollEvents();
+        inputManager.update(window);
+        if (inputManager.wasKeyPressed(GLFW_KEY_P) or inputManager.wasKeyPressed(GLFW_KEY_ESCAPE)) {
+            if (!isPaused) {
+                glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+                isPaused = true;
+            } else {
+                glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+                isPaused = false;
+                cameraObject.setFirstMouse(true);
+            }
+        }
 
     }
 
