@@ -16,24 +16,7 @@
 
 #include <engine/graphics/shader.hpp>
 #include <engine/graphics/texture.hpp>
-
-enum class TextureType {
-    Diffuse,
-    Specular,
-    Normal,
-    Height
-};
-
-struct MVertex {
-    glm::vec3 position;
-    glm::vec3 normal;
-    glm::vec2 uv;
-
-    glm::vec3 tangent;
-    glm::vec3 bitTangent;
-    int boneIDs[4];
-    float weights[4];
-};
+#include <engine/utils/types.hpp>
 
 struct Mesh {
     GLuint VBO, VAO, EBO;

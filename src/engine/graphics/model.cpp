@@ -1,4 +1,4 @@
-#include <engine/core/model.hpp>
+#include <engine/graphics/model.hpp>
 
 
 void Mesh::draw(const Shader& shader) const
