@@ -7,6 +7,8 @@ class Component {
 public:
 	Component(GameObject* owner) : owner(owner) {}
 	virtual ~Component() = default;
+
+	virtual void onAttach() {}
 	virtual void update(float deltaTime) {}
 	virtual void render(const glm::mat4& VP) {}
 

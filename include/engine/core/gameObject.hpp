@@ -1,51 +1,43 @@
 #pragma once
 
 #include <string>
+#include <vector>
+#include <memory>
 
 #include <glm/glm.hpp>
 
 #include <engine/graphics/model.hpp>
 #include <engine/graphics/mesh.hpp>
 #include <engine/utils/types.hpp>
-
+#include <engine/components/component.hpp>
 
 
 class GameObject {
 public:
-	GameObject(const std::string& name, const Model& meshes);
-	GameObject(const std::string& name, const Mesh* meshes);
+	GameObject(const std::string& n)
+		: name(n) {};
 
-	void setPosition(const glm::vec3& position);
-	void setRotation(const glm::vec3& rotation);
-	void setScale(const glm::vec3& scale);
-	void setMaterial(const Material& material);
-	void setActive(bool active);
-
-	glm::vec3 getPosition() const { return position; }
-	glm::vec3 setRotation() const { return rotation; }
-	glm::vec3 getScale() const { return scale; }
-	Material getMaterial() const { return material; }
-	const glm::mat4& getModelMatrix() const { return modelMatrix; }
 	std::string getName() const { return name; }
 	bool isActive() const { return active; }
 
-	virtual void update(float deltaTime);
-	virtual void render(const glm::mat4& viewProjectionMatrix);
+	void setActive(bool a);
+	void addComponent(std::unique_ptr<Component> comp);
+
+	template<typename T>
+	T* getComponent() const {
+		for (auto& c : components)
+			if (auto ptr = dynamic_cast<T*>(c.get()))
+				return ptr;
+		return nullptr;
+	}
+
+
+	void update(float deltaTime);
+	void render(const glm::mat4& VP);
 
 
 private:
 	std::string name;
-
-	Shader shader;
-	Material material;
-
-	glm::vec3 position;
-	glm::vec3 rotation;
-	glm::vec3 scale;
-	glm::mat4 modelMatrix;
-
 	bool active;
-
-	void calculateModelMatrix();
-
+	std::vector<std::unique_ptr<Component>> components;
 };
