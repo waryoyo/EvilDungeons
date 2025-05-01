@@ -20,7 +20,7 @@ static int screenHeight = 720;
 static float lastMouseX = 1280/2;
 static float lastMouseY = 720/2;
 static bool isPaused = false;
-
+static bool showSettings = false;
 
 static glm::mat4 createCubeModel(const glm::vec3& position, const glm::vec3& scale) {
     /*glm::mat4 model = glm::rotate(
@@ -131,21 +131,28 @@ static void mouseCallback(GLFWwindow* window, double xpos, double ypos) {
 }
 
 static void processInput(GLFWwindow* window, float deltaTime) {
-    if (not isPaused) {
-        cameraObject.handleKeyboard(window, deltaTime);
-    }
-    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
-        if (not isPaused) {
+    static bool escapePressedLastFrame = false;
+
+    bool escapePressed = glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS;
+
+    if (escapePressed && !escapePressedLastFrame) {
+        if (!isPaused) {
             glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
             isPaused = true;
-        }
-        else {
+        } else {
             glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
             isPaused = false;
             cameraObject.setFirstMouse(true);
         }
     }
+
+    escapePressedLastFrame = escapePressed;
+
+    if (!isPaused) {
+        cameraObject.handleKeyboard(window, deltaTime);
+    }
 }
+
 
 int main()
 {
@@ -197,6 +204,7 @@ int main()
     Model sonic = Model("sonic_the_hedgehog/scene.gltf");
 
     GLuint VAO, VBO, EBO;
+    
     createCubeVAO(VAO, VBO, EBO);
 
     glm::vec3 lightPos = { 0.0f, 3.0f, -10.0f };
@@ -236,9 +244,9 @@ int main()
 
         std::vector<glm::mat4> models;
 
-        //models.push_back(createCubeModel({ 0.0f, 0.0f, -5.0f }, { 1.5f ,1.5f, 1.5f }));
+        models.push_back(createCubeModel({ 0.0f, 0.0f, -5.0f }, { 1.5f ,1.5f, 1.5f }));
 
-        //texture.bind(0);
+        texture.bind(0);
         shader.setInt("uTex", 0);
         shader.setVec3("lightColor", lightColor);
         shader.setVec3("lightPos", lightPos);
@@ -277,21 +285,72 @@ int main()
         glBindVertexArray(VAO);
         glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, nullptr);
 
-        ImGui::Begin("Settings");
+
+if (isPaused) {
+    ImVec2 windowPos(0, 0); 
+    ImVec2 windowSize(screenWidth * 0.9f, screenHeight * 0.9f);
+    
+    ImGui::SetNextWindowPos(windowPos, ImGuiCond_Always);
+    ImGui::SetNextWindowSize(windowSize, ImGuiCond_Always);
+
+    ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.0f, 0.0f, 0.0f, 0.5f)); 
+
+    ImGui::Begin("Pause Menu", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar);
+    
+    ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[0]);  
+
+    ImGui::Text("Game Paused");
+    
+    if (ImGui::Button("Resume", ImVec2(180, 50))) {  
+        isPaused = false; 
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED); 
+        cameraObject.setFirstMouse(true); 
+    }
+    
+    if (ImGui::Button("Light Settings", ImVec2(180, 50))) { 
+        showSettings = !showSettings; 
+    }
+
+    if (ImGui::Button("Quit", ImVec2(180, 50))) {  
+        glfwSetWindowShouldClose(window, GLFW_TRUE);  
+    }
+    
+    ImGui::PopFont();
+    
+    ImGui::End();
+
+    ImGui::PopStyleColor();
+
+
+    if (showSettings) {
+        ImVec2 settingsPos(0, screenHeight * 0.3f);  
+        ImVec2 settingsSize(screenWidth * 0.9f, screenHeight * 0.6f); 
+
+        ImGui::SetNextWindowPos(settingsPos, ImGuiCond_Always);
+        ImGui::SetNextWindowSize(settingsSize, ImGuiCond_Always);
+
+        ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.0f, 0.0f, 0.0f, 0.0f)); 
+        
+        ImGui::Begin("Settings", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar);
+        
+        ImGui::PushItemWidth(400); 
         ImGui::SliderFloat3("Light Position", &lightPos.x, -20.0f, 20.0f);
-
         ImGui::ColorEdit3("Light Color", &lightColor.x);
-
         ImGui::SliderFloat3("Material Ambient", &materialAmbient.x, 0.0f, 1.0f);
         ImGui::SliderFloat3("Material Diffuse", &materialDiffuse.x, 0.0f, 1.0f);
         ImGui::SliderFloat3("Material Specular", &materialSpecular.x, 0.0f, 1.0f);
         ImGui::SliderFloat("Material Shininess", &shininess, 1.0f, 128.0f);
-
         ImGui::SliderFloat3("Light Ambient", &lightAmbient.x, 0.0f, 1.0f);
         ImGui::SliderFloat3("Light Diffuse", &lightDiffuse.x, 0.0f, 1.0f);
         ImGui::SliderFloat3("Light Specular", &lightSpecular.x, 0.0f, 1.0f);
-
+        ImGui::PopItemWidth(); 
+        
         ImGui::End();
+        
+        ImGui::PopStyleColor();
+    }
+}
+
 
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());

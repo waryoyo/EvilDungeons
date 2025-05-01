@@ -32,12 +32,18 @@ void Camera::handleKeyboard(GLFWwindow *window, float deltaTime)
 {
     float speed = 5.0f * deltaTime;
 
-    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
-        speed *= 4.0f;
+    if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
+        speed *= 3.0f;
     }
 
     const glm::vec3 cameraRight = glm::normalize(glm::cross(cameraUp, cameraFront));
 
+    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+        cameraPos += speed * cameraUp;
+    }
+    if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
+        cameraPos -= speed * cameraUp;
+    }
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
         cameraPos += speed * cameraFront;
     }
