@@ -17,18 +17,7 @@
 #include <engine/graphics/shader.hpp>
 #include <engine/graphics/texture.hpp>
 #include <engine/utils/types.hpp>
-
-struct Mesh {
-    GLuint VBO, VAO, EBO;
-    GLsizei indexCount;
-    std::shared_ptr<Texture> texture;
-    std::vector<std::pair<TextureType, std::shared_ptr<Texture>>> textures;
-
-    //std::vector<std::pair<TextureType ,Texture>> textures;
-
-    void draw(const Shader& shader) const;
-};
-
+#include <engine/graphics/mesh.hpp>
 
 class Model {
 public:

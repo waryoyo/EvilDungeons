@@ -3,12 +3,12 @@
 #include <GLFW/glfw3.h>
 
 CameraComponent::CameraComponent(GameObject* owner,
+    GLFWwindow* window,
     float fov,
     float aspect,
     float near,
     float far,
-    float sensitivity,
-    GLFWwindow* window)
+    float sensitivity)
     : Component(owner)
     , fov(fov)
     , aspect(aspect)
@@ -67,7 +67,6 @@ void CameraComponent::handleMouse() {
     glm::vec3 direction;
     double xpos, ypos;
     glfwGetCursorPos(window, &xpos, &ypos);
-
     if (firstMouse) {
         lastX = xpos;
         lastY = ypos;

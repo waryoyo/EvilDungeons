@@ -1,6 +1,5 @@
-#include "gameObject.hpp"
-#include "gameObject.hpp"
 #include <engine/core/gameObject.hpp>
+#include <engine/components/component.hpp>
 
 void GameObject::setActive(bool a)
 {
@@ -9,7 +8,7 @@ void GameObject::setActive(bool a)
 
 void GameObject::addComponent(std::unique_ptr<Component> comp)
 {
-	components.push_back(comp);
+	components.push_back(std::move(comp));
 }
 
 void GameObject::update(float deltaTime)

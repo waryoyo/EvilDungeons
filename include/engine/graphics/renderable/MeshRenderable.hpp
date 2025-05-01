@@ -1,7 +1,7 @@
 #pragma once
 #include "IRenderable.hpp"
 
-class MeshRenderable : IRenderable {
+class MeshRenderable : public IRenderable {
 public:
     MeshRenderable(GLuint vao, GLsizei count)
         : VAO(vao), indexCount(count) {}

@@ -9,8 +9,8 @@
 #include <engine/graphics/model.hpp>
 #include <engine/graphics/mesh.hpp>
 #include <engine/utils/types.hpp>
-#include <engine/components/component.hpp>
 
+class Component;
 
 class GameObject {
 public:

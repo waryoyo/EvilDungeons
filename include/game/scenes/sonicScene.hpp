@@ -7,13 +7,16 @@
 #include <engine/core/scene.hpp>
 #include <engine/graphics/model.hpp>
 #include <engine/core/gameObject.hpp>
+#include <engine/graphics/meshFactory.hpp>
+#include <engine/utils/types.hpp>
 #include <engine/components/cameraComponent.hpp>
+#include <engine/graphics/renderable/MeshRenderable.hpp>
+#include <engine/graphics/renderable/ModelRenderable.hpp>
 #include <engine/components/rendererComponent.hpp>
 
-
-class SonicScene : Scene {
+class SonicScene : public Scene {
 public:
-    SonicScene();
+    SonicScene(GLFWwindow* window);
     ~SonicScene() override;
 
     void onEnter() override;

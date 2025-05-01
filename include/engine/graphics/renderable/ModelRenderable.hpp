@@ -1,14 +1,15 @@
 #pragma once
 #include "IRenderable.hpp"
 #include <engine/graphics/model.hpp>
+#include <memory>
 
-class ModelRenderable : IRenderable {
+class ModelRenderable : public IRenderable {
 public:
-    ModelRenderable(const Model& m) : model(m) {}
+    ModelRenderable(std::unique_ptr<Model> m) : model(std::move(m)) {}
 
     void draw(const Shader& shader) const override {
-        model.draw(shader);
+        model->draw(shader);
     }
 private:
-    const Model& model;
+    std::unique_ptr<Model> model;
 };

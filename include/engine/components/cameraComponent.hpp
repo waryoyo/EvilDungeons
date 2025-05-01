@@ -4,8 +4,8 @@
 #include "TransformComponent.hpp"
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-
 #include <GLFW/glfw3.h>
+#include <iostream>
 
 
 class CameraComponent : public Component {
@@ -16,7 +16,7 @@ public:
         float aspect = 1280.0f / 720.0f,
         float near = 0.1f,
         float far = 50.0f,
-        float sensitivity = 0.1f,
+        float sensitivity = 0.1f
         );
 
     void onAttach() override;
