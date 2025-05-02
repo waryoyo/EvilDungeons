@@ -1,6 +1,8 @@
 #pragma once
 
+#include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#include <engine/components/cameraComponent.hpp>
 
 class Scene {
 public:
@@ -11,6 +13,11 @@ public:
 
 	virtual void update(float deltaTime) = 0;
 	virtual void render() = 0;
+
+	void setActiveCamera(CameraComponent* cam) { activeCamera = cam; }
+	CameraComponent* getActiveCamera() const { return activeCamera; }
+
 protected:
 	const GLFWwindow* window;
+	CameraComponent* activeCamera = nullptr;
 };

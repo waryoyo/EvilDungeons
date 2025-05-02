@@ -7,7 +7,7 @@ class ModelRenderable : public IRenderable {
 public:
     ModelRenderable(std::unique_ptr<Model> m) : model(std::move(m)) {}
 
-    void draw(const Shader& shader) const override {
+    void draw(const Shader* shader) const override {
         model->draw(shader);
     }
 private:

@@ -1,5 +1,6 @@
 #include <engine/components/cameraComponent.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
 CameraComponent::CameraComponent(GameObject* owner,
@@ -17,6 +18,11 @@ CameraComponent::CameraComponent(GameObject* owner,
     , sensitivity(sensitivity)
     , window(window)
     , yaw(-90.0f)
+    , xPos(720)
+    , yPos(360)
+    , lastX(720)
+    , lastY(360)
+    , pos(0.0f, 0.0f, 3.0f)
     , pitch(0.0f)
     , front(0.0f, 0.0f, -1.0f)
     , up(0.0f, 1.0f, 0.0f)
@@ -43,16 +49,11 @@ glm::mat4 CameraComponent::getProjection() const {
 }
 
 glm::mat4 CameraComponent::getView() const {
-    auto* tx = owner->getComponent<TransformComponent>();
-    if (!tx) return glm::mat4(1.0f);
-    return glm::lookAt(tx->getPosition(), tx->getPosition() + front, up);
+    return glm::lookAt(pos, pos + front, up);
 }
 
 glm::vec3 CameraComponent::getPosition() const {
-    if (auto* tx = owner->getComponent<TransformComponent>()) {
-        return tx->getPosition();
-    }
-    return glm::vec3(0.0f);
+    return pos;
 }
 
 glm::vec3 CameraComponent::getFront() const {

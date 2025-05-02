@@ -1,4 +1,5 @@
 #pragma once
+#define GLFW_INCLUDE_NONE
 
 #include <memory>
 #include <glad/glad.h>
@@ -26,6 +27,8 @@ public:
 
 private:
     std::vector<std::unique_ptr<GameObject>> objects;
+    std::unique_ptr<Shader> modelShader;
+    std::unique_ptr<Shader> lightShader;
 
     int screenWidth = 1280;
     int screenHeight = 720;

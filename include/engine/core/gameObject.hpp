@@ -15,7 +15,8 @@ class Component;
 class GameObject {
 public:
 	GameObject(const std::string& n)
-		: name(n) {};
+		: name(n), active(true)
+	{};
 
 	std::string getName() const { return name; }
 	bool isActive() const { return active; }

@@ -1,7 +1,7 @@
 #include <engine/graphics/model.hpp>
 
 
-void Mesh::draw(const Shader& shader) const
+void Mesh::draw(const Shader* shader) const
 {
 	glBindVertexArray(VAO);
 
@@ -14,11 +14,11 @@ void Mesh::draw(const Shader& shader) const
 		switch (textures[i].first)
 		{
 		case TextureType::Diffuse:
-			shader.setInt("texture_diffuse", 0);
+			shader->setInt("texture_diffuse", 0);
 			break;
 		case TextureType::Specular:
-			shader.setBool("useSpecular", true);
-			shader.setInt("texture_specular", i);
+			shader->setBool("useSpecular", true);
+			shader->setInt("texture_specular", i);
 			break;
 		}
 		glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, nullptr);
@@ -43,7 +43,7 @@ const std::string& Model::GetBasePath()
 	return s_basePath;
 }
 
-void Model::draw(const Shader& shader) const
+void Model::draw(const Shader* shader) const
 {
 	for (const auto& mesh : meshes)
 		mesh.draw(shader);

@@ -24,7 +24,7 @@ public:
     static void SetBasePath(const std::string& basePath);
     static const std::string& GetBasePath();
 
-    void draw(const Shader& shader) const;
+    void draw(const Shader* shader) const;
 
     Model(const std::string& modelPath);
 

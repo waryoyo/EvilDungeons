@@ -16,5 +16,5 @@ struct Mesh {
 
     //std::vector<std::pair<TextureType ,Texture>> textures;
 
-    void draw(const Shader& shader) const;
+    void draw(const Shader* shader) const;
 };

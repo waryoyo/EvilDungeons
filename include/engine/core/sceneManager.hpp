@@ -3,6 +3,7 @@
 #include <memory>
 #include <vector>
 #include <engine/core/scene.hpp>
+#include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
 class SceneManager {
