@@ -3,11 +3,13 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
+#include <engine/core/inputManager.hpp>
+
 
 class Camera {
     public:
         void handleMouse(GLFWwindow* window ,double xPos ,double yPos);
-        void handleKeyboard(GLFWwindow* window, float deltaTime);
+        void handleKeyboard(const InputManager& input, float deltaTime);
         glm::vec3 getCameraPos() const;
         glm::vec3 getCameraFront() const;
         glm::vec3 getCameraUp() const;

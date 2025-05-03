@@ -28,29 +28,36 @@ void Camera::handleMouse(GLFWwindow *window, double xPos, double yPos) {
     cameraFront = glm::normalize(direction);
 }
 
-void Camera::handleKeyboard(GLFWwindow *window, float deltaTime)
+void Camera::handleKeyboard(const InputManager& input, float deltaTime)
 {
     float speed = 5.0f * deltaTime;
 
-    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
-        speed *= 4.0f;
+    if (input.isKeyDown(GLFW_KEY_LEFT_CONTROL)) {
+        speed *= 3.0f;
     }
 
     const glm::vec3 cameraRight = glm::normalize(glm::cross(cameraUp, cameraFront));
 
-    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+    if (input.isKeyDown(GLFW_KEY_SPACE)) {
+        cameraPos += speed * cameraUp;
+    }
+    if (input.isKeyDown(GLFW_KEY_LEFT_SHIFT)) {
+        cameraPos -= speed * cameraUp;
+    }
+    if (input.isKeyDown(GLFW_KEY_W)) {
         cameraPos += speed * cameraFront;
     }
-    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+    if (input.isKeyDown(GLFW_KEY_S)) {
         cameraPos -= speed * cameraFront;
     }
-    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+    if (input.isKeyDown(GLFW_KEY_A)) {
         cameraPos += speed * cameraRight;
     }
-    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+    if (input.isKeyDown(GLFW_KEY_D)) {
         cameraPos -= speed * cameraRight;
     }
 }
+
 
 glm::vec3 Camera::getCameraPos() const
 {

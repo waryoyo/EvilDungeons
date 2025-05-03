@@ -19,7 +19,4 @@
 #include <engine/graphics/shader.hpp>
 #include <engine/graphics/texture.hpp>
 #include <engine/core/camera.hpp>
-#include <engine/graphics/model.hpp>
-#include <engine/core/sceneManager.hpp>
-
-#include <game/scenes/sonicScene.hpp>
+#include <engine/core/model.hpp>
