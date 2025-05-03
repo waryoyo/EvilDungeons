@@ -26,23 +26,24 @@ public:
             shader->use();
             glm::mat4 modelMatrix = tx->getModelMatrix();
             glm::mat4 mvp = VP * modelMatrix;
+            //shader->setInt("uTex", 0);
+
             shader->setMat4("uMVP", mvp);
             shader->setMat4("uModel", modelMatrix);
 
-            shader->setVec3("material.ambient", material.ambient);
-            shader->setVec3("material.diffuse", material.diffuse);
-            shader->setVec3("material.specular", material.specular);
-
+            //shader->setVec3("material.ambient", material.ambient);
+            //shader->setVec3("material.diffuse", material.diffuse);
+            //shader->setVec3("material.specular", material.specular);
+            //shader->setFloat("material.shininess", material.shiniess);
             shader->setFloat("shininess", material.shiniess);
 
             shader->setVec3("light.ambient", light.ambient);
             shader->setVec3("light.diffuse", light.diffuse);
             shader->setVec3("light.specular", light.specular);
 
-            shader->setVec3("lightColor", { 0.8f, 0.8f, 0.75f });
+            shader->setVec3("lightColor", { 0.2f, 0.2f, 0.25f });
             shader->setVec3("lightPos", { 0.0f, 3.0f, -10.0f });
-
-            shader->setVec3("camerPos", { 0.0f, 3.0f, 0.0f });
+            shader->setVec3("cameraPos", { 0.0f, 3.0f, 0.0f });
 
             model->draw(shader);
         }

@@ -40,8 +40,8 @@ private:
     float nearPlane;
     float farPlane;
 
-    float xPos;
-    float yPos;
+    double xPos;
+    double yPos;
 
     double lastX;
     double lastY;

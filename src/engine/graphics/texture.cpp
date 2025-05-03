@@ -17,11 +17,10 @@ Texture::Texture(const std::string& texturePath, GLenum wrapS, GLenum wrapT, GLe
     glGenTextures(1, &id);
     glBindTexture(GL_TEXTURE_2D, id);
 
-    glTexParameteri(GL_TEXTURE_2D, wrapS, GL_REPEAT);
-
-    glTexParameteri(GL_TEXTURE_2D, wrapT, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, minFilter, GL_LINEAR_MIPMAP_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, magFilter, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrapS);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrapT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minFilter);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, magFilter);
 
     const std::string fullPath = s_basePath + texturePath;
 

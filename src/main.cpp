@@ -68,14 +68,14 @@ int main()
         float deltaTime = currentFrameTime - lastFrameTime;
         lastFrameTime = currentFrameTime;
 
-        sceneManager.update(deltaTime);
-        sceneManager.render();
-
         glfwGetFramebufferSize(window, &w, &h);
         glViewport(0, 0, w, h);
 
         glClearColor(0.2f, 0.1f, 0.1f, 1.0f); 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        sceneManager.update(deltaTime);
+        sceneManager.render();
 
         glfwSwapBuffers(window);
         glfwPollEvents();

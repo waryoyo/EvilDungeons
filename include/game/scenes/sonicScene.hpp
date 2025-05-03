@@ -10,6 +10,7 @@
 #include <engine/core/gameObject.hpp>
 #include <engine/graphics/meshFactory.hpp>
 #include <engine/utils/types.hpp>
+#include <engine/graphics/texture.hpp>
 #include <engine/components/cameraComponent.hpp>
 #include <engine/graphics/renderable/MeshRenderable.hpp>
 #include <engine/graphics/renderable/ModelRenderable.hpp>
@@ -29,6 +30,11 @@ private:
     std::vector<std::unique_ptr<GameObject>> objects;
     std::unique_ptr<Shader> modelShader;
     std::unique_ptr<Shader> lightShader;
+
+    Material material;
+    Light light;
+
+    std::unique_ptr<Texture> HTexture;
 
     int screenWidth = 1280;
     int screenHeight = 720;

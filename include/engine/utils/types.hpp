@@ -14,10 +14,10 @@ struct MVertex {
     glm::vec3 normal;
     glm::vec2 uv;
 
-    glm::vec3 tangent;
-    glm::vec3 bitTangent;
-    int boneIDs[4];
-    float weights[4];
+    //glm::vec3 tangent;
+    //glm::vec3 bitTangent;
+    //int boneIDs[4];
+    //float weights[4];
 };
 
 struct Light {

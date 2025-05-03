@@ -66,19 +66,18 @@ glm::vec3 CameraComponent::getUp() const {
 
 void CameraComponent::handleMouse() {
     glm::vec3 direction;
-    double xpos, ypos;
-    glfwGetCursorPos(window, &xpos, &ypos);
+    glfwGetCursorPos(window, &xPos, &yPos);
     if (firstMouse) {
-        lastX = xpos;
-        lastY = ypos;
+        lastX = xPos;
+        lastY = xPos;
         firstMouse = false;
     }
 
-    float xoffset = xpos - lastX;
-    float yoffset = lastY - ypos;
+    float xoffset = xPos - lastX;
+    float yoffset = lastY - yPos;
 
-    lastX = xpos;
-    lastY = ypos;
+    lastX = xPos;
+    lastY = yPos;
 
     xoffset *= sensitivity;
     yoffset *= sensitivity;

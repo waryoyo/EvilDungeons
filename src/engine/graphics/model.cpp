@@ -115,7 +115,7 @@ Mesh Model::processMesh(aiMesh* aMesh, aiMaterial* aMaterial)
 				aMesh->mTextureCoords[0][i].y
 			};
 
-			vertex.tangent = {
+		/*	vertex.tangent = {
 				aMesh->mTangents[i].x,
 				aMesh->mTangents[i].y,
 				aMesh->mTangents[i].z
@@ -125,7 +125,7 @@ Mesh Model::processMesh(aiMesh* aMesh, aiMaterial* aMaterial)
 				aMesh->mBitangents[i].x,
 				aMesh->mBitangents[i].y,
 				aMesh->mBitangents[i].z
-			};
+			};*/
 		}
 		else {
 			vertex.uv = glm::vec2(0.0f);
