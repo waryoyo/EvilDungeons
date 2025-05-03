@@ -18,6 +18,6 @@ public:
 	CameraComponent* getActiveCamera() const { return activeCamera; }
 
 protected:
-	const GLFWwindow* window;
+	GLFWwindow* window;
 	CameraComponent* activeCamera = nullptr;
 };

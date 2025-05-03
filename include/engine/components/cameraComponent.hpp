@@ -2,8 +2,11 @@
 
 #include "Component.hpp"
 #include "TransformComponent.hpp"
-#include <glm/glm.hpp>
+#include <engine/core/inputManager.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/glm.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <iostream>
@@ -13,6 +16,7 @@ class CameraComponent : public Component {
 public:
     CameraComponent(GameObject* owner,
         GLFWwindow* window,
+        InputManager* input,
         float fov = 45.0f,
         float aspect = 1280.0f / 720.0f,
         float near = 0.1f,
@@ -31,6 +35,7 @@ public:
 
 private:
     GLFWwindow* window;
+    InputManager* input;
 
     float yaw;
     float pitch;
@@ -52,4 +57,5 @@ private:
     glm::vec3 up;
 
     void handleMouse();
+    void handleKeyboard(float deltaTime);
 };

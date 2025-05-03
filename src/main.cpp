@@ -79,7 +79,7 @@ int main()
 
         glfwSwapBuffers(window);
         glfwPollEvents();
-        inputManager.update(window);
+      /*  inputManager.update(window);
         if (inputManager.wasKeyPressed(GLFW_KEY_P) or inputManager.wasKeyPressed(GLFW_KEY_ESCAPE)) {
             if (!isPaused) {
                 glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
@@ -89,7 +89,7 @@ int main()
                 isPaused = false;
                 cameraObject.setFirstMouse(true);
             }
-        }
+        }*/
 
     }
 

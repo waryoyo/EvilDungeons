@@ -5,12 +5,14 @@
 
 CameraComponent::CameraComponent(GameObject* owner,
     GLFWwindow* window,
+    InputManager* input,
     float fov,
     float aspect,
     float near,
     float far,
     float sensitivity)
     : Component(owner)
+    , input(input)
     , fov(fov)
     , aspect(aspect)
     , nearPlane(near)
@@ -42,6 +44,7 @@ void CameraComponent::onAttach() {
 
 void CameraComponent::update(float dt) {
     handleMouse();
+    handleKeyboard(dt);
 }
 
 glm::mat4 CameraComponent::getProjection() const {
@@ -92,4 +95,34 @@ void CameraComponent::handleMouse() {
     direction.z = glm::sin(glm::radians(yaw)) * glm::cos(glm::radians(pitch));
 
     front = glm::normalize(direction);
+}
+
+void CameraComponent::handleKeyboard(float deltaTime)
+{
+    float speed = 5.0f * deltaTime;
+
+    if (input->isKeyDown(GLFW_KEY_LEFT_CONTROL)) {
+        speed *= 3.0f;
+    }
+
+    const glm::vec3 cameraRight = glm::normalize(glm::cross(up, front));
+
+    if (input->isKeyDown(GLFW_KEY_SPACE)) {
+        pos += speed * up;
+    }
+    if (input->isKeyDown(GLFW_KEY_LEFT_SHIFT)) {
+        pos -= speed * up;
+    }
+    if (input->isKeyDown(GLFW_KEY_W)) {
+        pos += speed * front;
+    }
+    if (input->isKeyDown(GLFW_KEY_S)) {
+        pos -= speed * front;
+    }
+    if (input->isKeyDown(GLFW_KEY_A)) {
+        pos += speed * cameraRight;
+    }
+    if (input->isKeyDown(GLFW_KEY_D)) {
+        pos -= speed * cameraRight;
+    }
 }

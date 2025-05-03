@@ -13,6 +13,7 @@
 #include <engine/graphics/texture.hpp>
 #include <engine/components/cameraComponent.hpp>
 #include <engine/graphics/renderable/MeshRenderable.hpp>
+#include <engine/core/inputManager.hpp>
 #include <engine/graphics/renderable/ModelRenderable.hpp>
 #include <engine/components/rendererComponent.hpp>
 
@@ -30,6 +31,8 @@ private:
     std::vector<std::unique_ptr<GameObject>> objects;
     std::unique_ptr<Shader> modelShader;
     std::unique_ptr<Shader> lightShader;
+
+    std::unique_ptr<InputManager> input;
 
     Material material;
     Light light;

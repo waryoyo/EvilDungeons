@@ -7,6 +7,10 @@ SonicScene::SonicScene(GLFWwindow* window)
     //auto modelShader = std::make_unique<Shader>(
     //    "model/basic.vert", "model/basic.frag");
 
+    // TODO: some weird flickering is happening make sure to fix that.
+
+    input = std::make_unique<InputManager>();
+
     modelShader = std::make_unique<Shader>("model/basic.vert", "model/basic.frag");
     lightShader = std::make_unique<Shader>("light/light.vert", "light/light.frag");
 
@@ -21,7 +25,7 @@ SonicScene::SonicScene(GLFWwindow* window)
     light = Light(glm::vec3(0.7f), glm::vec3(0.8f), glm::vec3(0.4f));
 
     auto camGO = std::make_unique<GameObject>("MainCamera");
-    camGO->addComponent(std::make_unique<CameraComponent>(camGO.get(), window));
+    camGO->addComponent(std::make_unique<CameraComponent>(camGO.get(), window, input.get()));
     objects.push_back(std::move(camGO));
 
     auto sonicGO = std::make_unique<GameObject>("SonicModel");
@@ -60,6 +64,7 @@ void SonicScene::onExit()
 
 void SonicScene::update(float dt)
 {
+    input->update(window);
     for (const auto& object : objects)
         object->update(dt);
 }
