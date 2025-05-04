@@ -41,6 +41,8 @@ private:
 
     int screenWidth = 1280;
     int screenHeight = 720;
+    bool isPaused = false;
+
     //Model sonic;
 
 };

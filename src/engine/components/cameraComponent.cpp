@@ -29,6 +29,7 @@ CameraComponent::CameraComponent(GameObject* owner,
     , front(0.0f, 0.0f, -1.0f)
     , up(0.0f, 1.0f, 0.0f)
     , firstMouse(true)
+    , isActive(true)
 {}
 
 void CameraComponent::onAttach() {
@@ -44,7 +45,7 @@ void CameraComponent::onAttach() {
 
 void CameraComponent::update(float dt) {
     handleMouse();
-    handleKeyboard(dt);
+    // handleKeyboard(dt);
 }
 
 glm::mat4 CameraComponent::getProjection() const {
@@ -67,62 +68,80 @@ glm::vec3 CameraComponent::getUp() const {
     return up;
 }
 
+bool CameraComponent::getIsActive() const {
+    return isActive;
+}
+
+void CameraComponent::setIsActive(bool isActive) {
+    this->isActive = isActive;
+}
+
+void CameraComponent::setPosition(const glm::vec3& pos) {
+    this->pos = pos;
+}
+
+void CameraComponent::setFirstMouse(bool newFirstMouse){
+    firstMouse = newFirstMouse;
+}
+
 void CameraComponent::handleMouse() {
-    glm::vec3 direction;
-    glfwGetCursorPos(window, &xPos, &yPos);
-    if (firstMouse) {
+    if(isActive){
+        glm::vec3 direction;
+        glfwGetCursorPos(window, &xPos, &yPos);
+        if (firstMouse) {
+            lastX = xPos;
+            lastY = yPos;
+            firstMouse = false;
+        }
+
+        float xoffset = xPos - lastX;
+        float yoffset = lastY - yPos;
+
         lastX = xPos;
-        lastY = xPos;
-        firstMouse = false;
-    }
+        lastY = yPos;
 
-    float xoffset = xPos - lastX;
-    float yoffset = lastY - yPos;
+        xoffset *= sensitivity;
+        yoffset *= sensitivity;
 
-    lastX = xPos;
-    lastY = yPos;
+        yaw += xoffset;
+        pitch += yoffset;
 
-    xoffset *= sensitivity;
-    yoffset *= sensitivity;
+        pitch = glm::clamp(pitch, -89.0f, 89.0f);
 
-    yaw += xoffset;
-    pitch += yoffset;
+        direction.x = glm::cos(glm::radians(yaw)) * glm::cos(glm::radians(pitch));
+        direction.y = glm::sin(glm::radians(pitch));
+        direction.z = glm::sin(glm::radians(yaw)) * glm::cos(glm::radians(pitch));
 
-    pitch = glm::clamp(pitch, -89.0f, 89.0f);
-
-    direction.x = glm::cos(glm::radians(yaw)) * glm::cos(glm::radians(pitch));
-    direction.y = glm::sin(glm::radians(pitch));
-    direction.z = glm::sin(glm::radians(yaw)) * glm::cos(glm::radians(pitch));
-
-    front = glm::normalize(direction);
-}
-
-void CameraComponent::handleKeyboard(float deltaTime)
-{
-    float speed = 5.0f * deltaTime;
-
-    if (input->isKeyDown(GLFW_KEY_LEFT_CONTROL)) {
-        speed *= 3.0f;
-    }
-
-    const glm::vec3 cameraRight = glm::normalize(glm::cross(up, front));
-
-    if (input->isKeyDown(GLFW_KEY_SPACE)) {
-        pos += speed * up;
-    }
-    if (input->isKeyDown(GLFW_KEY_LEFT_SHIFT)) {
-        pos -= speed * up;
-    }
-    if (input->isKeyDown(GLFW_KEY_W)) {
-        pos += speed * front;
-    }
-    if (input->isKeyDown(GLFW_KEY_S)) {
-        pos -= speed * front;
-    }
-    if (input->isKeyDown(GLFW_KEY_A)) {
-        pos += speed * cameraRight;
-    }
-    if (input->isKeyDown(GLFW_KEY_D)) {
-        pos -= speed * cameraRight;
+        front = glm::normalize(direction);
     }
 }
+
+// void CameraComponent::handleKeyboard(float deltaTime)
+// {
+//     float speed = 5.0f * deltaTime;
+
+//     if (input->isKeyDown(GLFW_KEY_LEFT_CONTROL)) {
+//         speed *= 3.0f;
+//     }
+
+//     const glm::vec3 cameraRight = glm::normalize(glm::cross(up, front));
+
+//     if (input->isKeyDown(GLFW_KEY_SPACE)) {
+//         pos += speed * up;
+//     }
+//     if (input->isKeyDown(GLFW_KEY_LEFT_SHIFT)) {
+//         pos -= speed * up;
+//     }
+//     if (input->isKeyDown(GLFW_KEY_W)) {
+//         pos += speed * front;
+//     }
+//     if (input->isKeyDown(GLFW_KEY_S)) {
+//         pos -= speed * front;
+//     }
+//     if (input->isKeyDown(GLFW_KEY_A)) {
+//         pos += speed * cameraRight;
+//     }
+//     if (input->isKeyDown(GLFW_KEY_D)) {
+//         pos -= speed * cameraRight;
+//     }
+// }

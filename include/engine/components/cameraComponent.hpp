@@ -32,6 +32,11 @@ public:
     glm::vec3 getPosition() const;
     glm::vec3 getFront() const;
     glm::vec3 getUp() const;
+    bool getIsActive() const;
+    void setIsActive(bool isActive);
+    void setPosition(const glm::vec3& pos);
+    void setFirstMouse(bool firstMouse);
+
 
 private:
     GLFWwindow* window;
@@ -51,6 +56,7 @@ private:
     double lastX;
     double lastY;
     bool firstMouse;
+    bool isActive;
 
     glm::vec3 front;
     glm::vec3 pos;

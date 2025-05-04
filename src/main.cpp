@@ -79,6 +79,7 @@ int main()
 
         glfwSwapBuffers(window);
         glfwPollEvents();
+        
       /*  inputManager.update(window);
         if (inputManager.wasKeyPressed(GLFW_KEY_P) or inputManager.wasKeyPressed(GLFW_KEY_ESCAPE)) {
             if (!isPaused) {
