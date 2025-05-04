@@ -8,7 +8,7 @@ using namespace std;
 static int screenWidth = 1280;
 static int screenHeight = 720;
 
-void GLAPIENTRY MessageCallback(GLenum source,
+static void GLAPIENTRY MessageCallback(GLenum source,
     GLenum type,
     GLuint id,
     GLenum severity,
@@ -54,8 +54,8 @@ int main()
     glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
     glDebugMessageCallback(MessageCallback, nullptr);
     glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LESS);
     glEnable(GL_MULTISAMPLE);
-
 
     auto sceneManager = SceneManager(window);
     sceneManager.push(std::make_unique<SonicScene>(window));
@@ -70,6 +70,7 @@ int main()
 
         glfwGetFramebufferSize(window, &w, &h);
         glViewport(0, 0, w, h);
+        glfwPollEvents();
 
         glClearColor(0.2f, 0.1f, 0.1f, 1.0f); 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -78,19 +79,6 @@ int main()
         sceneManager.render();
 
         glfwSwapBuffers(window);
-        glfwPollEvents();
-        
-      /*  inputManager.update(window);
-        if (inputManager.wasKeyPressed(GLFW_KEY_P) or inputManager.wasKeyPressed(GLFW_KEY_ESCAPE)) {
-            if (!isPaused) {
-                glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-                isPaused = true;
-            } else {
-                glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-                isPaused = false;
-                cameraObject.setFirstMouse(true);
-            }
-        }*/
 
     }
 

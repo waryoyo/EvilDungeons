@@ -32,3 +32,8 @@ struct Material {
     glm::vec3 specular;
     float shiniess;
 };
+
+struct CameraData {
+    glm::vec3 cameraPos;
+    glm::mat4 VP;
+};
