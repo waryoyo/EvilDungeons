@@ -11,5 +11,5 @@ public:
 	const std::vector<LightComponent*>& getAll() const;
 	void clear();
 private:
-	std::vector<LightComponent> lights;
+	std::vector<LightComponent*> lights;
 };

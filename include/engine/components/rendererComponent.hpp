@@ -6,6 +6,8 @@
 #include <engine/graphics/renderable/IRenderable.hpp>
 #include <engine/graphics/shader.hpp>
 #include <engine/utils/types.hpp>
+#include <engine/graphics/binder/IUniformBinder.hpp>
+
 
 class RendererComponent : public Component {
 public:

@@ -17,14 +17,13 @@ struct Light {
     vec3 specular;
 };
 uniform Light light; 
+uniform int numLights;
 
 uniform vec3 lightColor;
 uniform vec3 lightPos; 
 uniform vec3 cameraPos;
 
-void main()
-{
-    vec4 texColor = texture(texture_diffuse, oUV);
+vec3 calculateLight(vec4 texColor){
     vec3 ambient = texColor.rgb * light.ambient * lightColor;
 
     vec3 norm = normalize(Normal);
@@ -44,6 +43,14 @@ void main()
     float specular = pow(max(dot(viewDir, reflectDir), 0.0), shininess);
 
     vec3 final = ambient + diffuse + specular * specularColor;
+    return final;
+}
+
+
+void main()
+{
+    vec4 texColor = texture(texture_diffuse, oUV);
+    vec3 final = calculateLight(texColor);
 
     FragColor = vec4(final, texColor.a);
 }
