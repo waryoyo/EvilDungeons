@@ -1,6 +1,7 @@
 #pragma once
 
 #include <glm/glm.hpp>
+#include <vector>
 
 enum class TextureType {
     Diffuse,
@@ -47,3 +48,9 @@ struct CameraData {
     glm::mat4 VP;
 };
 
+
+struct RenderContext {
+    CameraData cameraData;
+    const std::vector<LightNew>& lights;
+    float globalShininess = 32.0f;
+};

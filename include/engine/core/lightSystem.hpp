@@ -2,6 +2,8 @@
 
 #include <vector>
 
+#include <engine/utils/types.hpp>
+
 class LightComponent;
 
 class LightSystem {

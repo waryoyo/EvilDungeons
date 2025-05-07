@@ -7,6 +7,7 @@
 #include <engine/graphics/shader.hpp>
 #include <engine/utils/types.hpp>
 #include <engine/graphics/binder/IUniformBinder.hpp>
+#include <engine/components/cameraComponent.hpp>
 
 
 class RendererComponent : public Component {
@@ -15,29 +16,34 @@ public:
         std::unique_ptr<IRenderable> model,
         Shader* shader,
         const Material& material,
-        const Light& light)
-        : Component(owner), model(std::move(model)), shader(shader), material(material), light(light) {}
+        IUniformBinder* binder)
+        : Component(owner), model(std::move(model)), shader(shader), material(material), binder(binder)
+    {}
 
     void onAttach() {
         if (!owner->getComponent<TransformComponent>())
             owner->addComponent(std::make_unique<TransformComponent>(owner));
     }
 
-    void render(const glm::mat4& VP) override {
+    void render(const RenderContext& context) override {
         if (auto* tx = owner->getComponent<TransformComponent>()) {
             shader->use();
             glm::mat4 modelMatrix = tx->getModelMatrix();
-            glm::mat4 mvp = VP * modelMatrix;
+            //glm::mat4 mvp = context.cameraData->VP * modelMatrix;
             //shader->setInt("uTex", 0);
 
-            shader->setMat4("uMVP", mvp);
-            shader->setMat4("uModel", modelMatrix);
+            const BinderParams params = BinderParams(shader, modelMatrix, context);
+            binder->apply(params);
+            model->draw(shader);
+
+          /*  shader->setMat4("uMVP", mvp);
+            shader->setMat4("uModel", modelMatrix);*/
 
             //shader->setVec3("material.ambient", material.ambient);
             //shader->setVec3("material.diffuse", material.diffuse);
             //shader->setVec3("material.specular", material.specular);
             //shader->setFloat("material.shininess", material.shiniess);
-            shader->setFloat("shininess", material.shiniess);
+           /* shader->setFloat("shininess", material.shiniess);
 
             shader->setVec3("light.ambient", light.ambient);
             shader->setVec3("light.diffuse", light.diffuse);
@@ -45,9 +51,8 @@ public:
 
             shader->setVec3("lightColor", { 0.2f, 0.2f, 0.25f });
             shader->setVec3("lightPos", { 0.0f, 3.0f, -10.0f });
-            shader->setVec3("cameraPos", { 0.0f, 3.0f, 0.0f });
+            shader->setVec3("cameraPos", { 0.0f, 3.0f, 0.0f });*/
 
-            model->draw(shader);
         }
     }
 
@@ -65,7 +70,7 @@ public:
 private:
     std::unique_ptr<IRenderable> model;
     Material material;
-    Light light;
     Shader* shader;
+    IUniformBinder* binder;
 
 };

@@ -16,6 +16,9 @@
 #include <engine/core/inputManager.hpp>
 #include <engine/graphics/renderable/ModelRenderable.hpp>
 #include <engine/components/rendererComponent.hpp>
+#include <engine/core/lightSystem.hpp>
+#include <engine/core/renderSystem.hpp>
+
 
 class SonicScene : public Scene {
 public:
@@ -32,12 +35,11 @@ private:
     std::unique_ptr<Shader> modelShader;
     std::unique_ptr<Shader> lightShader;
 
+    LightSystem lightSystem;
+    RenderSystem renderSystem;
     std::unique_ptr<InputManager> input;
 
-    Material material;
-    Light light;
-
-    std::unique_ptr<Texture> HTexture;
+    LightNew light;
 
     int screenWidth = 1280;
     int screenHeight = 720;

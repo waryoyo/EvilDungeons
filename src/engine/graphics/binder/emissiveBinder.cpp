@@ -2,7 +2,7 @@
 
 void EmissiveBinder::apply(const BinderParams& params) const
 {
-    const auto mvp = params.cameraData->VP * params.modelMatrix;
+    const auto mvp = params.context.cameraData.VP * params.modelMatrix;
     const auto shader = params.shader;
 
     shader->use();

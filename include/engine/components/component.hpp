@@ -10,7 +10,7 @@ public:
 
 	virtual void onAttach() {}
 	virtual void update(float deltaTime) {}
-	virtual void render(const glm::mat4& VP) {}
+	virtual void render(const RenderContext& context) {}
 
 protected:
 	GameObject* owner;

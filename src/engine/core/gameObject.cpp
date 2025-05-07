@@ -18,9 +18,9 @@ void GameObject::update(float deltaTime)
 	}
 }
 
-void GameObject::render(const glm::mat4& VP)
+void GameObject::render(const RenderContext& context)
 {
 	for (const auto& component : components) {
-		component->render(VP);
+		component->render(context);
 	}
 }

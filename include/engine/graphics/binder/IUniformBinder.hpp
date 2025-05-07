@@ -8,8 +8,7 @@
 struct BinderParams {
     Shader* shader;
     glm::mat4 modelMatrix;
-    const CameraData* cameraData;
-    const std::vector<LightNew>& lights;
+    const RenderContext& context;
 };
 
 class IUniformBinder {

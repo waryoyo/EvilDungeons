@@ -11,6 +11,7 @@
 #include <engine/utils/types.hpp>
 
 class Component;
+class CameraComponent;
 
 class GameObject {
 public:
@@ -34,7 +35,10 @@ public:
 
 
 	void update(float deltaTime);
-	void render(const glm::mat4& VP);
+	void render(const RenderContext& context);
+
+	void setActiveCamera(const CameraComponent* camera);
+	CameraComponent* getActiveCamera();
 
 
 private:

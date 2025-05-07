@@ -1,41 +1,41 @@
 #include <game/scenes/sonicScene.hpp>
+#include <engine/graphics/binder/PhongBinder.hpp>
 
 
 SonicScene::SonicScene(GLFWwindow* window)
     : Scene(window)
 {
-    //auto modelShader = std::make_unique<Shader>(
-    //    "model/basic.vert", "model/basic.frag");
 
     // TODO: some weird flickering is happening make sure to fix that.
+    lightSystem = LightSystem();
+    renderSystem = RenderSystem();
+
+    light = LightNew(glm::vec3(0.7f), glm::vec3(0.8f), glm::vec3(0.4f), glm::vec3(1.0f), glm::vec3(1.0f), 32.0f);
 
     input = std::make_unique<InputManager>();
 
     modelShader = std::make_unique<Shader>("model/basic.vert", "model/basic.frag");
     lightShader = std::make_unique<Shader>("light/light.vert", "light/light.frag");
 
-    //auto lightShader = std::make_unique<Shader>(
-    //    "light/light.vert", "light/light.frag");
-    auto sonicModel = std::make_unique<Model>(
+   /* auto sonicModel = std::make_unique<Model>(
         "sonic_the_hedgehog/scene.gltf");
 
-    auto sonicRenderable = std::make_unique<ModelRenderable>(std::move(sonicModel));
+    auto sonicRenderable = std::make_unique<ModelRenderable>(std::move(sonicModel));*/
 
-    material = Material(glm::vec3(0.2f), glm::vec3(1.0f), glm::vec3(0.5f), 32.0f);
-    light = Light(glm::vec3(0.7f), glm::vec3(0.8f), glm::vec3(0.4f));
+    auto sonicGO = std::make_unique<GameObject>("SonicModel");
+    sonicGO->addComponent(std::make_unique<TransformComponent>(sonicGO.get()));
+    sonicGO->getComponent<TransformComponent>()->setPosition({ 0.0f,0.0f,-5.0f });
+    sonicGO->getComponent<TransformComponent>()->setScale(glm::vec3(1.0f));
+    renderSystem.addModel(sonicGO.get(), "sonic_the_hedgehog/scene.gltf", modelShader.get());
 
     auto camGO = std::make_unique<GameObject>("MainCamera");
     camGO->addComponent(std::make_unique<CameraComponent>(camGO.get(), window, input.get()));
     objects.push_back(std::move(camGO));
 
-    auto sonicGO = std::make_unique<GameObject>("SonicModel");
-    sonicGO->addComponent(std::make_unique<TransformComponent>(sonicGO.get()));
-    sonicGO->addComponent(
-        std::make_unique<RendererComponent>(
-            sonicGO.get(), std::move(sonicRenderable), modelShader.get(), material, light));
-    sonicGO->getComponent<TransformComponent>()->setPosition({ 0.0f,0.0f,-5.0f });
-    sonicGO->getComponent<TransformComponent>()->setScale(glm::vec3(1.0f));
+  
     objects.push_back(std::move(sonicGO));
+
+
 
     //GLuint VAO, VBO, EBO;
     //MeshFactory::makeCube(VAO, VBO, EBO); // We need a better thing for this, interface shouldnt know what a VAO is even unless needed
@@ -116,6 +116,10 @@ void SonicScene::render()
 {
     const auto& camera = objects[0]->getComponent<CameraComponent>(); // ONLY DOING THIS HERE WILL NEVER DO THIS, this is just for testing
     const auto VP = camera->getProjection() * camera->getView();
+    std::vector vec = std::vector<LightNew>();
+    vec.push_back(light);
+    RenderContext context = RenderContext(CameraData(camera->getPosition(), VP), vec);
+
     for (const auto& object : objects)
-        object->render(VP);
+        object->render(context);
 }

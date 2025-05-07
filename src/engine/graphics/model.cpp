@@ -18,7 +18,7 @@ void Mesh::draw(const Shader* shader) const
 			break;
 		case TextureType::Specular:
 			shader->setBool("useSpecular", true);
-			shader->setInt("texture_specular", i);
+			shader->setInt("texture_specular", 1);
 			break;
 		}
 		glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, nullptr);
