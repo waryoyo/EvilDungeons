@@ -7,35 +7,31 @@ SonicScene::SonicScene(GLFWwindow* window)
 {
 
     // TODO: some weird flickering is happening make sure to fix that.
-    lightSystem = LightSystem();
-    renderSystem = RenderSystem();
-
     light = LightNew(glm::vec3(0.7f), glm::vec3(0.8f), glm::vec3(0.4f), glm::vec3(1.0f), glm::vec3(1.0f), 32.0f);
 
     input = std::make_unique<InputManager>();
+    ShaderManager::Load("modelShader", "model/basic.vert", "model/basic.frag");
+    ShaderManager::Load("lightShader", "light/light.vert", "light/light.frag");
 
-    modelShader = std::make_unique<Shader>("model/basic.vert", "model/basic.frag");
-    lightShader = std::make_unique<Shader>("light/light.vert", "light/light.frag");
-
-   /* auto sonicModel = std::make_unique<Model>(
-        "sonic_the_hedgehog/scene.gltf");
-
-    auto sonicRenderable = std::make_unique<ModelRenderable>(std::move(sonicModel));*/
-
-    auto sonicGO = std::make_unique<GameObject>("SonicModel");
-    sonicGO->addComponent(std::make_unique<TransformComponent>(sonicGO.get()));
-    sonicGO->getComponent<TransformComponent>()->setPosition({ 0.0f,0.0f,-5.0f });
-    sonicGO->getComponent<TransformComponent>()->setScale(glm::vec3(1.0f));
-    renderSystem.addModel(sonicGO.get(), "sonic_the_hedgehog/scene.gltf", modelShader.get());
 
     auto camGO = std::make_unique<GameObject>("MainCamera");
     camGO->addComponent(std::make_unique<CameraComponent>(camGO.get(), window, input.get()));
     objects.push_back(std::move(camGO));
 
   
+    auto sonicGO = std::make_unique<GameObject>("SonicModel");
+    sonicGO->addComponent(std::make_unique<TransformComponent>(sonicGO.get()));
+    sonicGO->getComponent<TransformComponent>()->setPosition({ 0.0f,0.0f,-5.0f });
+    sonicGO->getComponent<TransformComponent>()->setScale(glm::vec3(1.0f));
+    renderSystem.addModel(sonicGO.get(), "sonic_the_hedgehog/scene.gltf", ShaderManager::Get("modelShader"));
     objects.push_back(std::move(sonicGO));
 
+    auto lightGO = std::make_unique<GameObject>("LightCube");
+    lightGO->addComponent(std::make_unique<TransformComponent>(lightGO.get()));
+    lightGO->getComponent<TransformComponent>()->setPosition({ 15.0f,5.0f,-10.0f });
 
+    renderSystem.addColorCube(lightGO.get(), { 1.0f, 1.0f, 1.0 }, ShaderManager::Get("lightShader"));
+    objects.push_back(std::move(lightGO));
 
     //GLuint VAO, VBO, EBO;
     //MeshFactory::makeCube(VAO, VBO, EBO); // We need a better thing for this, interface shouldnt know what a VAO is even unless needed

@@ -7,12 +7,11 @@ void PhongBinder::apply(const BinderParams& params) const
 
     const auto mvp = params.context.cameraData.VP * params.modelMatrix;
     const auto numLights = std::min(static_cast<int>(lights.size()), 16);
+
     shader->setMat4("uMVP", mvp);
     shader->setMat4("uModel", params.modelMatrix);
-
     shader->setVec3("cameraPos", params.context.cameraData.cameraPos);
     shader->setFloat("shininess", material.shiniess);
-
     shader->setInt("numLights", numLights);
 
     for (int i = 0; i < numLights; i++) {

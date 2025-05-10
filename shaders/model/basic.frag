@@ -14,6 +14,14 @@ uniform bool useSpecular;
 uniform float shininess;
 
 
+struct Material {
+    vec3 ambient;
+    vec3 diffuse;
+    vec3 specular;
+    float shininess;
+}; 
+uniform Material material;
+
 struct Light {  
     vec3 ambient;
     vec3 diffuse;

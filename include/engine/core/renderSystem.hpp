@@ -10,6 +10,7 @@
 #include <engine/graphics/renderable/ModelRenderable.hpp>
 #include <engine/components/rendererComponent.hpp>
 #include <engine/graphics/binder/emissiveBinder.hpp>
+#include <engine/graphics/meshFactory.hpp>
 #include <engine/graphics/binder/PhongBinder.hpp>
 #include <engine/graphics/binder/IUniformBinder.hpp>
 
@@ -43,17 +44,17 @@ public:
         renderComps.push_back(std::move(rc));
         return renderComps.back().get();
     }
-
-    RendererComponent* createColorCube(GameObject* owner,
+    */
+    void addColorCube(GameObject* owner,
         const glm::vec3& color,
         Shader* shader)
     {
-        auto mesh = std::make_unique<CubeRenderable>(color);
-        auto rc = std::make_unique<RendererComponent>(owner, std::move(mesh), shader);
-        owner->addComponent(rc.get());
-        renderComps.push_back(std::move(rc));
-        return renderComps.back().get();
-    }*/
+        GLuint VAO, VBO, EBO;
+        MeshFactory::makeCube(VAO, VBO, EBO);
+        auto meshRenderer = std::make_unique<MeshRenderable>(VAO, 36);
+        auto rc = std::make_unique<RendererComponent>(owner, std::move(meshRenderer), shader, MaterialFactory::create(MaterialFactory::Type::Silver), emissiveBinder.get());
+        owner->addComponent(std::move(rc));
+    }
 
     void addModel(GameObject* owner,
         const std::string& modelPath,

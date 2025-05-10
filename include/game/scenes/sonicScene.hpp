@@ -18,6 +18,7 @@
 #include <engine/components/rendererComponent.hpp>
 #include <engine/core/lightSystem.hpp>
 #include <engine/core/renderSystem.hpp>
+#include <engine/graphics/managers/shaderManager.hpp>
 
 
 class SonicScene : public Scene {

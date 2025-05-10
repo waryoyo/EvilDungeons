@@ -15,7 +15,7 @@ void EmissiveBinder::apply(const BinderParams& params) const
             arg->bind(0);
             shader->setInt("uTex", 0);
         }
-        else if constexpr (std::is_same_v<T, glm::vec4>) {
+        else if constexpr (std::is_same_v<T, glm::vec3>) {
             shader->setVec3("uObjectColor", arg);
         }
     }, emissive);
