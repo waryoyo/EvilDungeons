@@ -11,7 +11,7 @@
 #include <engine/components/rendererComponent.hpp>
 #include <engine/graphics/binder/emissiveBinder.hpp>
 #include <engine/graphics/meshFactory.hpp>
-#include <engine/graphics/binder/PhongBinder.hpp>
+#include <engine/graphics/binder/phongBinder.hpp>
 #include <engine/graphics/binder/IUniformBinder.hpp>
 
 #include <engine/graphics/factories/materialFactory.hpp>

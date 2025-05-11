@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Component.hpp"
-#include "TransformComponent.hpp"
+#include "component.hpp"
+#include "transformComponent.hpp"
 #include <engine/core/inputManager.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/glm.hpp>

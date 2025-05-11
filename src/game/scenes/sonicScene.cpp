@@ -1,6 +1,6 @@
 #include <game/scenes/sonicScene.hpp>
 #include <engine/core/gameObject.hpp>
-#include <engine/graphics/binder/PhongBinder.hpp>
+#include <engine/graphics/binder/phongBinder.hpp>
 
 
 SonicScene::SonicScene(GLFWwindow* window)
