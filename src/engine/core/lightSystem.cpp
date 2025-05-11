@@ -1,7 +1,5 @@
 #include <engine/core/lightSystem.hpp>
-
 #include <algorithm>
-
 #include <engine/components/lightComponent.hpp>
 
 void LightSystem::add(LightComponent* light)
@@ -21,4 +19,9 @@ const std::vector<LightComponent*>& LightSystem::getAll() const
 void LightSystem::clear()
 {
 	lights.clear();
+}
+
+void LightSystem::setDirty()
+{
+	dirty = true;
 }

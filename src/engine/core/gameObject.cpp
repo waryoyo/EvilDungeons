@@ -1,5 +1,6 @@
 #include <engine/core/gameObject.hpp>
 #include <engine/components/component.hpp>
+#include <engine/core/scene.hpp>
 
 void GameObject::setActive(bool a)
 {
@@ -23,4 +24,9 @@ void GameObject::render(const RenderContext& context)
 	for (const auto& component : components) {
 		component->render(context);
 	}
+}
+
+const Scene* GameObject::getScene() const
+{
+	return owner;
 }

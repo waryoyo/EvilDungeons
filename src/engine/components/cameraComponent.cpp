@@ -3,6 +3,8 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
+#include <engine/core/gameObject.hpp>
+
 CameraComponent::CameraComponent(GameObject* owner,
     GLFWwindow* window,
     InputManager* input,

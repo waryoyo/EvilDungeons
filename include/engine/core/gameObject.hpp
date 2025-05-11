@@ -10,13 +10,14 @@
 #include <engine/graphics/mesh.hpp>
 #include <engine/utils/types.hpp>
 
+class Scene;
 class Component;
 class CameraComponent;
 
 class GameObject {
 public:
-	GameObject(const std::string& n)
-		: name(n), active(true)
+	GameObject(const std::string& n, const Scene* owner)
+		: name(n), active(true), owner(owner)
 	{};
 
 	std::string getName() const { return name; }
@@ -40,9 +41,12 @@ public:
 	void setActiveCamera(const CameraComponent* camera);
 	CameraComponent* getActiveCamera();
 
+	const Scene* getScene() const;
+
 
 private:
 	std::string name;
+	const Scene* owner;
 	bool active;
 	std::vector<std::unique_ptr<Component>> components;
 };

@@ -1,24 +1,17 @@
 #pragma once
 
 #include "Component.hpp"
-#include "TransformComponent.hpp"
-
+#include <memory>
 #include <engine/utils/types.hpp>
 
-#include <glm/glm.hpp>
+class GameObject;
+class TransformComponent;
 
 class LightComponent : public Component {
 public:
-    LightComponent(GameObject* owner,
-        const LightNew& light)
-        : Component(owner), light(light) {}
-
-    void onAttach() override {
-        if (!owner->getComponent<TransformComponent>())
-            owner->addComponent(std::make_unique<TransformComponent>(owner));
-    }
-
-    LightNew getLight() const { return light; }
+    LightComponent(GameObject* owner, LightNew& light);
+    void onAttach() override;
+    LightNew getLight() const;
 
 private:
     LightNew light;

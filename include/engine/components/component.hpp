@@ -1,8 +1,9 @@
 #pragma once
 
 #include <glm/glm.hpp>
-#include <engine/core/gameObject.hpp>
+#include <engine/utils/types.hpp>
 
+class GameObject;
 class Component {
 public:
 	Component(GameObject* owner) : owner(owner) {}

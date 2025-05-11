@@ -16,6 +16,8 @@
 
 #include <engine/graphics/factories/materialFactory.hpp>
 
+#include <engine/core/gameObject.hpp>
+
 
 #include <vector>
 
@@ -52,7 +54,7 @@ public:
         GLuint VAO, VBO, EBO;
         MeshFactory::makeCube(VAO, VBO, EBO);
         auto meshRenderer = std::make_unique<MeshRenderable>(VAO, 36);
-        auto rc = std::make_unique<RendererComponent>(owner, std::move(meshRenderer), shader, MaterialFactory::create(MaterialFactory::Type::Silver), emissiveBinder.get());
+        auto rc = std::make_unique<RendererComponent>(owner, std::move(meshRenderer), shader, MaterialFactory::create(MaterialFactory::Type::Silver), emissiveBinder.get(), false);
         owner->addComponent(std::move(rc));
     }
 
@@ -61,7 +63,7 @@ public:
         Shader* shader)
     {
         auto mesh = std::make_unique<ModelRenderable>(std::move(std::make_unique<Model>(modelPath)));
-        auto rc = std::make_unique<RendererComponent>(owner, std::move(mesh), shader, MaterialFactory::create(MaterialFactory::Type::Silver), phongBinder.get());
+        auto rc = std::make_unique<RendererComponent>(owner, std::move(mesh), shader, MaterialFactory::create(MaterialFactory::Type::Silver), phongBinder.get(), true);
         owner->addComponent(std::move(rc));
     }
 
