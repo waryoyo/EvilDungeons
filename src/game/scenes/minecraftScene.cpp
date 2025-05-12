@@ -1,5 +1,7 @@
 #include <game/scenes/minecraftScene.hpp>
 #include <game/world/worldComponent.hpp>
+#include <game/world/chunk.hpp>
+
 
 MinecraftScene::MinecraftScene(GLFWwindow* window)
     : Scene(window)
