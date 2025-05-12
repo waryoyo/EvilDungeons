@@ -58,7 +58,7 @@ int main()
     glEnable(GL_MULTISAMPLE);
 
     auto sceneManager = SceneManager(window);
-    sceneManager.push(std::make_unique<SonicScene>(window));
+    sceneManager.push(std::make_unique<MinecraftScene>(window));
     float lastFrameTime = 0.0f;
 
     while (!glfwWindowShouldClose(window)) {
