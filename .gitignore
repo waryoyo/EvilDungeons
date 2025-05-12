@@ -369,3 +369,6 @@ cmake_install.cmake
 Makefile
 
 .vscode/
+*.sw*
+EvilDungeons
+*.a

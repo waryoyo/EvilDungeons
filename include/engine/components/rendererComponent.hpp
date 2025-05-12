@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Component.hpp"
+#include "component.hpp"
 #include "transformComponent.hpp"
 
 #include <engine/utils/types.hpp>

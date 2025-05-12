@@ -1,5 +1,5 @@
 #include <engine/components/lightComponent.hpp>
-#include <engine/components/TransformComponent.hpp>
+#include <engine/components/transformComponent.hpp>
 
 #include <engine/core/scene.hpp>
 
