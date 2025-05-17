@@ -5,7 +5,6 @@ void EmissiveBinder::apply(const BinderParams& params) const
     const auto mvp = params.context.cameraData.VP * params.modelMatrix;
     const auto shader = params.shader;
 
-    shader->use();
     shader->setMat4("uMVP", mvp);
     shader->setMat4("uModel", params.modelMatrix);
 

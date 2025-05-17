@@ -54,3 +54,4 @@ struct RenderContext {
     const std::vector<LightNew>& lights;
     float globalShininess = 32.0f;
 };
+

@@ -56,6 +56,9 @@ int main()
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
     glEnable(GL_MULTISAMPLE);
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_BACK);
+    glFrontFace(GL_CW);
 
     auto sceneManager = SceneManager(window);
     sceneManager.push(std::make_unique<MinecraftScene>(window));

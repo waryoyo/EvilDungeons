@@ -71,6 +71,8 @@ file(GLOB_RECURSE HEADERS CONFIGURE_DEPENDS
 add_library(glad STATIC external/glad/src/glad.c)
 add_library(stb_image STATIC external/stb/stb_image.cpp)
 
+add_library(FastNoiseLite STATIC external/fastNoise/FastNoiseLite.cpp)
+
 target_include_directories(stb_image PUBLIC external/stb)
 target_include_directories(glad PUBLIC external/glad/include)
 
@@ -101,6 +103,7 @@ target_link_libraries(EvilDungeons
   imgui
   stb_image
   assimp::assimp
+  FastNoiseLite
 )
 target_include_directories(EvilDungeons PRIVATE ${glad_SOURCE_DIR}/include)
 

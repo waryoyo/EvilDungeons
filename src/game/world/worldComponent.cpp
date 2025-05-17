@@ -14,7 +14,6 @@ void WorldComponent::generate() {
             auto chunk = std::make_unique<Chunk>(pos);
             chunk->generate();
             chunk->buildMesh();
-            //chunk->buildMesh();
             chunks[pos] = std::move(chunk);
         }
     }

@@ -3,32 +3,27 @@
 #include <engine/utils/types.hpp>
 #include <engine/graphics/binder/emissiveBinder.hpp>
 #include <engine/graphics/renderable/IRenderable.hpp>
-
+#include <engine/graphics/meshFactory.hpp>
+#include <game/utils/types.hpp>
 #include <memory>
 
 static constexpr int SIZE = 8;
 static constexpr int block = 16;
-
-enum class BlockType : uint8_t {
-    Air,
-    Dirt,
-    Stone,
-};
 
 class Chunk {
 public:
 
     Chunk(glm::ivec3 position);
     void generate();
-    void buildMesh(); 
+    void buildMesh();
     void render(const RenderContext& context);
 
     BlockType getBlock(glm::i8vec3 pos) const;
 
-    void drawCube(glm::i8vec3 pos, glm::vec3 color);
+    //void drawCube(glm::i8vec3 pos, glm::vec3 color);
 
-    void setBlock(glm::i8vec3 pos, BlockType type);
-    void removeBlock(glm::i8vec3 pos, BlockType type);
+    //void setBlock(glm::i8vec3 pos, BlockType type);
+    //void removeBlock(glm::i8vec3 pos, BlockType type);
 
 private:
     glm::ivec3 position;
@@ -36,7 +31,18 @@ private:
     std::unique_ptr<IRenderable> mesh;
     std::unique_ptr<EmissiveBinder> emissiveBinder;
 
-    GLuint VAO, VBO, EBO;
+    std::vector<Quad> greedyMesh(std::vector<uint32_t>& data);
+    void addVerticesIndices(const std::vector<Quad>& quads,
+        const glm::ivec3& uVec,
+        const glm::ivec3& vVec,
+        const glm::vec3& normal,
+        const glm::vec3& origin,
+        std::vector<Vertex>& vertices,
+        std::vector<uint32_t>& indices,
+        uint32_t& indexOffset
+    );
 
     bool isAir(glm::ivec3 pos) const;
+    GLuint VAO, VBO, EBO;
+
 };
