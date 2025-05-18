@@ -14,6 +14,7 @@
 
 class CameraComponent : public Component {
 public:
+    CameraComponent(GameObject* owner);
     CameraComponent(GameObject* owner,
         GLFWwindow* window,
         InputManager* input,
