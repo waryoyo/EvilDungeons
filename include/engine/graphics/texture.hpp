@@ -14,10 +14,10 @@ public:
 	static const std::string& GetBasePath();
 
 	Texture(const std::string& texturePath,
-		GLenum wrapS = GL_REPEAT,
-		GLenum wrapT = GL_REPEAT,
-		GLenum minFilter = GL_LINEAR_MIPMAP_LINEAR,
-		GLenum magFilter = GL_LINEAR
+		GLenum wrapS = GL_CLAMP_TO_EDGE,
+		GLenum wrapT = GL_CLAMP_TO_EDGE,
+		GLenum minFilter = GL_NEAREST_MIPMAP_NEAREST,
+		GLenum magFilter = GL_NEAREST
 	);
 
 	~Texture();  // This is a huge problem i need to make some sort of manager for textures incase

@@ -4,10 +4,11 @@
 #include <engine/graphics/binder/emissiveBinder.hpp>
 #include <engine/graphics/renderable/IRenderable.hpp>
 #include <engine/graphics/meshFactory.hpp>
+#include <engine/graphics/texture.hpp>
 #include <game/utils/types.hpp>
 #include <memory>
 
-static constexpr int SIZE = 8;
+static constexpr int SIZE = 16;
 static constexpr int block = 16;
 
 class Chunk {
@@ -18,7 +19,7 @@ public:
     void buildMesh();
     void render(const RenderContext& context);
 
-    BlockType getBlock(glm::i8vec3 pos) const;
+    BlockType getBlock(glm::ivec3 pos) const;
 
     //void drawCube(glm::i8vec3 pos, glm::vec3 color);
 
@@ -27,10 +28,10 @@ public:
 
 private:
     glm::ivec3 position;
-    BlockType blocks[SIZE][SIZE][SIZE];
+    BlockType blocks[SIZE][SIZE][SIZE] = { BlockType::Air };
     std::unique_ptr<IRenderable> mesh;
     std::unique_ptr<EmissiveBinder> emissiveBinder;
-
+    Texture atlas;
     std::vector<Quad> greedyMesh(std::vector<uint32_t>& data);
     void addVerticesIndices(const std::vector<Quad>& quads,
         const glm::ivec3& uVec,

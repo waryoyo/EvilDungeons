@@ -2,6 +2,11 @@
 //
 
 #include "main.h"
+#include <chrono>
+
+auto lastTime = std::chrono::high_resolution_clock::now();
+int frameCount = 0;
+float fps = 0.0f;
 
 using namespace std;
 
@@ -58,14 +63,27 @@ int main()
     glEnable(GL_MULTISAMPLE);
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
-    glFrontFace(GL_CW);
+    glFrontFace(GL_CCW);
 
     auto sceneManager = SceneManager(window);
     sceneManager.push(std::make_unique<MinecraftScene>(window));
     float lastFrameTime = 0.0f;
 
     while (!glfwWindowShouldClose(window)) {
-       
+        
+        frameCount++;
+        auto currentTime = std::chrono::high_resolution_clock::now();
+        float dt = std::chrono::duration<float>(currentTime - lastTime).count();
+
+        if (dt >= 1.0f) {
+            fps = frameCount / dt;
+            frameCount = 0;
+            lastTime = currentTime;
+        }
+
+        std::string title = "My Game - FPS: " + std::to_string(fps);
+        glfwSetWindowTitle(window, title.c_str());
+
         int w, h;
         float currentFrameTime = static_cast<float>(glfwGetTime());
         float deltaTime = currentFrameTime - lastFrameTime;
