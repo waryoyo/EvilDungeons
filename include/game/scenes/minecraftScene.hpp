@@ -8,6 +8,7 @@
 #include <engine/core/scene.hpp>
 #include <engine/utils/types.hpp>
 #include <engine/components/cameraComponent.hpp>
+#include <engine/components/playerComponent.hpp>
 #include <engine/core/inputManager.hpp>
 #include <engine/components/rendererComponent.hpp>
 #include <engine/core/lightSystem.hpp>
