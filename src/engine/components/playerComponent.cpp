@@ -7,11 +7,9 @@
 
 PlayerComponent::PlayerComponent(GameObject* owner,
     GLFWwindow* window,
-    InputManager* input,
-    CameraComponent* camera)
+    InputManager* input)
     : Component(owner)
     , input(input)
-    , camera(camera)
     , pos(glm::vec3(0.0f,0.0f,3.0f))
     , gravity(9.8f)
     , isOnGround(true)
@@ -41,6 +39,7 @@ void PlayerComponent::handleMouse() {
 
 void PlayerComponent::handleKeyboard(float deltaTime)
 {
+    camera = owner->getComponent<CameraComponent>();
     float speed = 5.0f * deltaTime;
     if (input->isKeyDown(GLFW_KEY_LEFT_CONTROL)) {
         speed *= 2.5f;

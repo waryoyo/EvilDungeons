@@ -215,13 +215,11 @@ void Chunk::render(const RenderContext& context) {
         return;
     }
     const auto shader = ShaderManager::Get("worldShader");
-    const auto texture = Texture("h.jpg");
 
     const BinderParams params = BinderParams(shader, glm::mat4(1.0f), context);
     shader->use();
     shader->setInt("texture_diffuse", 0);
     emissiveBinder->apply(params);
-    texture.bind(0);
     mesh->draw(shader);
     /*for (int x = 0; x < SIZE; x++) {
         for (int z = 0; z < SIZE; z++) {

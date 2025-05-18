@@ -11,8 +11,7 @@ class PlayerComponent : public Component {
     public:
         PlayerComponent(GameObject* owner,
             GLFWwindow* window,
-            InputManager* input,
-            CameraComponent* camera);
+            InputManager* input);
         void onAttach() override;
         void update(float dt) override;
         glm::vec3 getPosition() const;

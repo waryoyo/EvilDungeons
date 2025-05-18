@@ -15,9 +15,9 @@ MinecraftScene::MinecraftScene(GLFWwindow* window)
     playerGO->addComponent(std::make_unique<PlayerComponent>(playerGO.get(), window, input.get()));
     objects.push_back(std::move(playerGO));
 
-    auto camGO = std::make_unique<GameObject>("MainCamera", this);
+   /* auto camGO = std::make_unique<GameObject>("MainCamera", this);
     camGO->addComponent(std::make_unique<CameraComponent>(camGO.get(), window, input.get()));
-    objects.push_back(std::move(camGO));
+    objects.push_back(std::move(camGO));*/
 
     auto worldGO = std::make_unique<GameObject>("World", this);
     worldGO->addComponent(std::make_unique<WorldComponent>(worldGO.get()));
