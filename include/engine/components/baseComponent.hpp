@@ -13,6 +13,10 @@ public:
 	virtual void update(float deltaTime) {}
 	virtual void render(const RenderContext& context) {}
 
+	GameObject* getOwner() {
+		return owner;
+	}
+
 protected:
 	GameObject* owner;
 };

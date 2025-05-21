@@ -1,4 +1,4 @@
-#include <engine/core/lightSystem.hpp>
+#include <engine/core/systems/lightSystem.hpp>
 #include <algorithm>
 #include <engine/components/lightComponent.hpp>
 

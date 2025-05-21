@@ -55,3 +55,7 @@ struct RenderContext {
     float globalShininess = 32.0f;
 };
 
+struct CollisionManifold {
+    glm::vec3 normal;
+    float penetration;
+};

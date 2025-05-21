@@ -15,8 +15,8 @@
 #include <engine/core/inputManager.hpp>
 #include <engine/graphics/renderable/ModelRenderable.hpp>
 #include <engine/components/rendererComponent.hpp>
-#include <engine/core/lightSystem.hpp>
-#include <engine/core/renderSystem.hpp>
+#include <engine/core/systems/lightSystem.hpp>
+#include <engine/core/systems/renderSystem.hpp>
 #include <engine/graphics/managers/shaderManager.hpp>
 #include <engine/components/lightComponent.hpp>
 

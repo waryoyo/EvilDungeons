@@ -1,5 +1,5 @@
 #include <engine/core/gameObject.hpp>
-#include <engine/components/component.hpp>
+#include <engine/components/baseComponent.hpp>
 #include <engine/core/scene.hpp>
 
 void GameObject::setActive(bool a)
@@ -9,6 +9,7 @@ void GameObject::setActive(bool a)
 
 void GameObject::addComponent(std::unique_ptr<Component> comp)
 {
+	comp->onAttach();
 	components.push_back(std::move(comp));
 }
 

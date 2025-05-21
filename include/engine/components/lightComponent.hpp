@@ -1,6 +1,6 @@
 #pragma once
 
-#include "component.hpp"
+#include "baseComponent.hpp"
 #include <memory>
 #include <engine/utils/types.hpp>
 

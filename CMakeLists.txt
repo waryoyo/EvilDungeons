@@ -60,6 +60,8 @@ target_include_directories(imgui PUBLIC ${imgui_SOURCE_DIR}
 ${imgui_SOURCE_DIR}/backends
 ${glfw_SOURCE_DIR}/include)
 
+
+
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS
   src/*.cpp
 )
@@ -75,6 +77,7 @@ add_library(FastNoiseLite STATIC external/fastNoise/FastNoiseLite.cpp)
 
 target_include_directories(stb_image PUBLIC external/stb)
 target_include_directories(glad PUBLIC external/glad/include)
+target_include_directories(FastNoiseLite PUBLIC external/fastNoise)
 
 # Add source to this project's executable.
 add_executable (EvilDungeons ${SOURCES} ${HEADERS})

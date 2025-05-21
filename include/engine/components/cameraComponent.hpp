@@ -14,6 +14,7 @@
 
 class CameraComponent : public Component {
 public:
+    CameraComponent(GameObject* owner);
     CameraComponent(GameObject* owner,
         GLFWwindow* window,
         InputManager* input,
@@ -22,7 +23,7 @@ public:
         float near = 0.1f,
         float far = 50.0f,
         float sensitivity = 0.1f
-        );
+    );
 
     void onAttach() override;
     void update(float dt) override;

@@ -12,6 +12,7 @@
 #include <glm/glm.hpp>
 #include <iostream>
 #include <bit>
+#include <FastNoiseLite.h>
 
 constexpr float tilePx = 16.0f;
 
@@ -86,11 +87,38 @@ Chunk::Chunk(glm::ivec3 position) : position(position), atlas("terrain.png")
     emissiveBinder = std::make_unique<EmissiveBinder>(glm::vec3(1.0f, 1.0f, 1.0f));
 }
 
+Chunk::~Chunk()
+{
+    glDeleteVertexArrays(1, &VAO);
+    glDeleteBuffers(1, &VBO);
+    glDeleteBuffers(1, &EBO);
+}
+
 void Chunk::generate() {
+    static FastNoiseLite noise;
+    static bool initialized = false;
+    if (!initialized) {
+        noise.SetSeed(1337);
+        noise.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
+        noise.SetFrequency(0.01f);
+        initialized = true;
+    }
+    int worldX0 = position.x * SIZE;
+    int worldY0 = position.y * SIZE;
+    int worldZ0 = position.z * SIZE;
+
     for (int x = 0; x < SIZE; x++) {
         for (int z = 0; z < SIZE; z++) {
+            float n = noise.GetNoise(float(worldX0 + x), float(worldZ0 + z));
+            int height = int((n * 0.5f + 0.5f) * 32.0f);
+
             for (int y = 0; y < SIZE; y++) {
-                blocks[x][y][z] = BlockType::Dirt;
+                if (worldY0 + y <= height) {
+                    blocks[x][y][z] = BlockType::Dirt;
+                }
+                else {
+                    blocks[x][y][z] = BlockType::Air;
+                }
             }
         }
     }
@@ -193,18 +221,15 @@ void Chunk::buildMesh()
 
                 const auto& tiles = blockTileMap.at(blockType);
 
-                // for each of the 6 faces
                 for (int i = 0; i < 6; ++i) {
                     glm::ivec3 faceNormal = directions[i];
                     glm::ivec3 neighborBlockPos = currentBlockPos + faceNormal;
                     if (!isAir(neighborBlockPos)) continue;
 
-                    // pick top/bottom/side tile
                     Tile tile = (faceNormal.y == +1 ? tiles.top
                         : faceNormal.y == -1 ? tiles.bottom
                         : tiles.side);
 
-                    // build the small UV rectangle in [0…1]
                     glm::vec2 uvOrigin(tile.x * invTileU,
                         tile.y * invTileV);
                     glm::vec2 uvSize(invTileU, invTileV);
@@ -215,12 +240,10 @@ void Chunk::buildMesh()
                         uvOrigin + glm::vec2(0.0f,     uvSize.y)
                     };
 
-                    // world-space origin of this block
                     glm::vec3 blockWorldOrigin =
                         glm::vec3(position * SIZE) +
                         glm::vec3(currentBlockPos);
 
-                    // emit 4 verts
                     for (int v = 0; v < 4; ++v) {
                         vertices.push_back({
                             blockWorldOrigin + faceVertices[i][v],
@@ -229,7 +252,6 @@ void Chunk::buildMesh()
                             });
                     }
 
-                    // two triangles
                     indices.insert(indices.end(), {
                         indexOffset + 0, indexOffset + 1, indexOffset + 2,
                         indexOffset + 0, indexOffset + 2, indexOffset + 3
@@ -287,19 +309,6 @@ void Chunk::render(const RenderContext& context) {
     emissiveBinder->apply(params);
     atlas.bind(0);
     mesh->draw(shader);
-    /*for (int x = 0; x < SIZE; x++) {
-        for (int z = 0; z < SIZE; z++) {
-            for (int y = 0; y < SIZE; y++) {
-                if (blocks[x][y][z] == BlockType::Dirt) {
-                    const auto shader = ShaderManager::Get("worldShader");
-                    const BinderParams params = BinderParams(shader, glm::translate(glm::mat4(1.0f), glm::vec3(x, y, z)), context);
-                    emissiveBinder->apply(params);
-                    mesh->draw(shader);
-                }
-            }
-        }
-    }*/
-
 }
 
 BlockType Chunk::getBlock(glm::ivec3 pos) const
@@ -307,4 +316,9 @@ BlockType Chunk::getBlock(glm::ivec3 pos) const
     if (pos.x < 0 || pos.x >= SIZE || pos.y < 0 || pos.y >= SIZE || pos.z < 0 || pos.z >= SIZE)
         return BlockType::Air;
     return blocks[pos.x][pos.y][pos.z];
+}
+
+const glm::ivec3& Chunk::getPosition() const
+{
+    return position;
 }

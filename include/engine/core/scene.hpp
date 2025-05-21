@@ -3,7 +3,7 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <engine/components/cameraComponent.hpp>
-#include <engine/core/lightSystem.hpp>
+#include <engine/core/systems/lightSystem.hpp>
 
 class GameObject;
 

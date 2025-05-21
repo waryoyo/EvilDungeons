@@ -8,7 +8,7 @@
 #include <engine/components/cameraComponent.hpp>
 #include <engine/core/gameObject.hpp>
 #include <engine/core/scene.hpp>
-#include <engine/core/lightSystem.hpp>
+#include <engine/core/systems/lightSystem.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/glm.hpp>

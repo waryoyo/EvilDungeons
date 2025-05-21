@@ -15,11 +15,13 @@ class Chunk {
 public:
 
     Chunk(glm::ivec3 position);
+    ~Chunk();
     void generate();
     void buildMesh();
     void render(const RenderContext& context);
 
     BlockType getBlock(glm::ivec3 pos) const;
+    const glm::ivec3& getPosition() const;
 
     //void drawCube(glm::i8vec3 pos, glm::vec3 color);
 

@@ -8,15 +8,7 @@ WorldComponent::WorldComponent(GameObject* owner) : Component(owner)
 }
 
 void WorldComponent::generate() {
-   /* for (int x = -1; x <= 1; ++x) {
-        for (int z = -1; z <= 1; ++z) {
-            glm::ivec3 pos = glm::ivec3(x, 0, z);
-            auto chunk = std::make_unique<Chunk>(pos);
-            chunk->generate();
-            chunk->buildMesh();
-            chunks[pos] = std::move(chunk);
-        }
-    }*/
+
     glm::ivec3 pos = glm::ivec3(0, 0, 0);
     auto chunk = std::make_unique<Chunk>(pos);
     chunks[pos] = std::move(chunk);
