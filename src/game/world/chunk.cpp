@@ -22,8 +22,8 @@ struct BlockTiles {
 };
 
 static const std::unordered_map<BlockType, BlockTiles> blockTileMap = {
-    { BlockType::Dirt,   { {2,0}, {2,0}, {2,0} } },
-    { BlockType::Grass,  { {0,0}, {2,0}, {3,0} } },
+    { BlockType::Dirt,   { {1,0}, {1,0}, {1,0} } },
+    { BlockType::Grass,  { {0,0}, {1,0}, {2,0} } },
     { BlockType::Stone,  { {3,0}, {3,0}, {3,0} } },
 };
 
@@ -330,4 +330,13 @@ BlockType Chunk::getBlock(glm::ivec3 pos) const
 const glm::ivec3& Chunk::getPosition() const
 {
     return position;
+}
+
+int Chunk::getTopBlockY(int x, int z) const {
+    for (int y = SIZE - 1; y >= 0; y--) {
+        if (blocks[x][y][z] != BlockType::Air) {
+            return y;
+        }
+    }
+    return -1;
 }

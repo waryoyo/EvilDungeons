@@ -18,8 +18,9 @@ MinecraftScene::MinecraftScene(GLFWwindow* window)
 
     auto camGO = std::make_unique<GameObject>("MainCamera", this);
     camGO->addComponent(std::make_unique<CameraComponent>(camGO.get(), window, input.get()));
-    //camGO->getComponent<TransformComponent>()->setPosition({ 0.0f, -10.0f, 0.0f });
+    camGO->getComponent<CameraComponent>()->setPosition({ 0.0f, 20.0f, 3.0f });
     objects.push_back(std::move(camGO));
+    world.ensureChunksNear({ 0.0f, 20.0f, 3.0f });
 
    /* auto worldGO = std::make_unique<GameObject>("World", this);
     worldGO->addComponent(std::make_unique<WorldComponent>(worldGO.get()));
@@ -82,42 +83,14 @@ void MinecraftScene::update(float dt)
 
     glm::vec3 newPos = pos + cameraDelta;
     world.ensureChunksNear(newPos);
-    camera->setPosition(newPos);
 
-
-   /* const glm::vec3 camMinLocal = { -0.3f, 0.0f,-0.3f };
-    const glm::vec3 camMaxLocal = { 0.3f, 1.8f, 0.3f };
-    AABB camBox{
-      newPos + camMinLocal,
-      newPos + camMaxLocal
-    };
-
-    bool hit = false;
-    for (auto& [coord, chunkPtr] : world.chunks) {
-        glm::vec3 chunkBase = glm::vec3(coord * 32);
-        for (int x = 0; x < 32 && !hit; ++x) {
-            for (int y = 0; y < 32 && !hit; ++y) {
-                for (int z = 0; z < 32; ++z) {
-                    if (chunkPtr->getBlock({ x,y,z }) == BlockType::Air)
-                        continue;
-
-                    glm::vec3 bMin = chunkBase + glm::vec3(x, y, z);
-                    glm::vec3 bMax = bMin + glm::vec3(1.0f);
-                    if (intersectAABB(camBox.min, camBox.max, bMin, bMax)) {
-                        hit = true;
-                        break;
-                    }
-                }
-            }
-        }
-        if (hit) break;
-    }
-    camera->setPosition(newPos);
-    */
-  /*  if (!hit) {
+    // Use new efficient collision check with only top blocks of center chunk
+    bool hit = world.checkCollisionWithTopBlocks(newPos, 0.5f);
+    if (!hit) {
         camera->setPosition(newPos);
         world.ensureChunksNear(newPos);
-    }*/
+    }
+
     if (input->wasKeyPressed(GLFW_KEY_P) || input->wasKeyPressed(GLFW_KEY_ESCAPE)) {
         if (!isPaused) {
             glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
@@ -129,7 +102,6 @@ void MinecraftScene::update(float dt)
             camera->setFirstMouse(true);
         }
     }
-
 
     camera->setIsActive(!isPaused);
     for (const auto& object : objects)

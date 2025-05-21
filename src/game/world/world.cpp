@@ -66,3 +66,30 @@ void World::loadChunk(const glm::ivec3& chunkCoords) {
 void World::unloadChunk(const glm::ivec3& chunkCoords) {
     chunks.erase(chunkCoords);
 }
+
+Chunk* World::getCenterChunk() {
+    auto it = chunks.find(lastCenter);
+    if (it != chunks.end()) {
+        return it->second.get();
+    }
+    return nullptr;
+}
+
+bool World::checkCollisionWithTopBlocks(const glm::vec3& pos, float radius) {
+    Chunk* centerChunk = getCenterChunk();
+    if (!centerChunk) return false;
+    // Convert world position to chunk-local coordinates
+    int localX = static_cast<int>(pos.x) % CHUNK_SIZE;
+    int localZ = static_cast<int>(pos.z) % CHUNK_SIZE;
+    if (localX < 0) localX += CHUNK_SIZE;
+    if (localZ < 0) localZ += CHUNK_SIZE;
+    int topY = centerChunk->getTopBlockY(localX, localZ);
+    if (topY < 0) return false;
+    // Simple AABB collision: check if pos is within the top block's bounds
+    glm::vec3 blockMin(lastCenter.x * CHUNK_SIZE + localX, topY, lastCenter.z * CHUNK_SIZE + localZ);
+    glm::vec3 blockMax = blockMin + glm::vec3(1.0f);
+    // Sphere-AABB collision
+    glm::vec3 closestPoint = glm::clamp(pos, blockMin, blockMax);
+    float distSq = glm::distance(pos, closestPoint);
+    return distSq < radius * radius;
+}

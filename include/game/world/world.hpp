@@ -24,6 +24,11 @@ public:
 
 	void generate();
 	void render(const RenderContext& context) const;
+	glm::vec3 collideAndSlideCamera(const glm::vec3& oldPos, const glm::vec3& desiredPos);
+	// Returns a pointer to the center chunk (the one at lastCenter)
+	Chunk* getCenterChunk();
+	// Checks collision with only the top-layered blocks of the center chunk
+	bool checkCollisionWithTopBlocks(const glm::vec3& pos, float radius = 0.5f);
 
 private:
 	void loadChunk(const glm::ivec3& chunkCoords);

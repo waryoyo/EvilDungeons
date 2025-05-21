@@ -23,6 +23,9 @@ public:
     BlockType getBlock(glm::ivec3 pos) const;
     const glm::ivec3& getPosition() const;
 
+    // Returns the highest non-air block y for a given x,z column, or -1 if all air
+    int getTopBlockY(int x, int z) const;
+
     //void drawCube(glm::i8vec3 pos, glm::vec3 color);
 
     //void setBlock(glm::i8vec3 pos, BlockType type);
