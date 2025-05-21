@@ -1,6 +1,6 @@
 #pragma once
 
-#include "component.hpp"
+#include "baseComponent.hpp"
 #include "transformComponent.hpp"
 #include <engine/core/inputManager.hpp>
 #include <glm/gtc/matrix_transform.hpp>
