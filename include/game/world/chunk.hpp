@@ -8,7 +8,7 @@
 #include <game/utils/types.hpp>
 #include <memory>
 
-static constexpr int SIZE = 16;
+static constexpr int SIZE = 32;
 static constexpr int block = 16;
 
 class Chunk {

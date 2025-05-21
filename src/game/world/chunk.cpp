@@ -23,6 +23,7 @@ struct BlockTiles {
 
 static const std::unordered_map<BlockType, BlockTiles> blockTileMap = {
     { BlockType::Dirt,   { {2,0}, {2,0}, {2,0} } },
+    { BlockType::Grass,  { {0,0}, {2,0}, {3,0} } },
     { BlockType::Stone,  { {3,0}, {3,0}, {3,0} } },
 };
 
@@ -36,12 +37,12 @@ const glm::ivec3 faceNormals[6] = {
 };
 
 const glm::vec3 faceVertices[6][4] = {
-    {{1,0,0}, {1,1,0}, {1,1,1}, {1,0,1}}, // right
-    {{0,0,1}, {0,1,1}, {0,1,0}, {0,0,0}}, // left
-    {{0,1,0}, {0,1,1}, {1,1,1}, {1,1,0}}, // top
-    {{0,0,1}, {0,0,0}, {1,0,0}, {1,0,1}}, // bottom
-    {{0,0,1}, {1,0,1}, {1,1,1}, {0,1,1}}, // front
-    {{1,0,0}, {0,0,0}, {0,1,0}, {1,1,0}}, // back
+    {{1,0,1}, {1,0,0}, {1,1,0}, {1,1,1}},
+    {{0,0,0}, {0,0,1}, {0,1,1}, {0,1,0}},
+    {{0,1,0}, {0,1,1}, {1,1,1}, {1,1,0}},
+    {{0,0,1}, {0,0,0}, {1,0,0}, {1,0,1}},
+    {{0,0,1}, {1,0,1}, {1,1,1}, {0,1,1}},
+    {{1,0,0}, {0,0,0}, {0,1,0}, {1,1,0}},
 };
 
 const glm::vec2 baseUVs[4] = {
@@ -112,13 +113,19 @@ void Chunk::generate() {
             float n = noise.GetNoise(float(worldX0 + x), float(worldZ0 + z));
             int height = int((n * 0.5f + 0.5f) * 32.0f);
 
+            int topDirtY = -1;
             for (int y = 0; y < SIZE; y++) {
                 if (worldY0 + y <= height) {
                     blocks[x][y][z] = BlockType::Dirt;
+                    topDirtY = y;
                 }
                 else {
                     blocks[x][y][z] = BlockType::Air;
                 }
+            }
+            // Place grass block on top of the highest dirt block in this column
+            if (topDirtY >= 0) {
+                blocks[x][topDirtY][z] = BlockType::Grass;
             }
         }
     }
@@ -230,8 +237,10 @@ void Chunk::buildMesh()
                         : faceNormal.y == -1 ? tiles.bottom
                         : tiles.side);
 
+                    // Flip the y index for the atlas (assuming 16 tiles tall)
+                    int flippedY = 15 - tile.y;
                     glm::vec2 uvOrigin(tile.x * invTileU,
-                        tile.y * invTileV);
+                        flippedY * invTileV);
                     glm::vec2 uvSize(invTileU, invTileV);
                     std::vector<glm::vec2> faceUVs = {
                         uvOrigin + glm::vec2(0.0f,        0.0f),

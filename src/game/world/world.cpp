@@ -29,14 +29,14 @@ void World::ensureChunksNear(const glm::vec3& playerPos) {
 
     lastCenter = center;
     std::unordered_set<glm::ivec3, Vec3Hash> tokeep;
-    tokeep.reserve(9);
+    tokeep.reserve((2 * HORIZONTAL_RADIUS + 1)* (2 * HORIZONTAL_RADIUS + 1));
     tokeep.insert(center);
 
-    for (int x = -1; x <= 1; x++) {
-        for (int z = -1; z <= 1; z++) {
-            tokeep.insert({ center.x + x,
-                       0,
-                       center.z + z });
+    for (int x = -HORIZONTAL_RADIUS; x <= HORIZONTAL_RADIUS; x++) {
+        for (int z = -HORIZONTAL_RADIUS; z <= HORIZONTAL_RADIUS; z++) {
+            if (x * x + z * z <= HORIZONTAL_RADIUS * HORIZONTAL_RADIUS) {
+                tokeep.insert({ center.x + x, 0, center.z + z });
+            }
         }
     }
    

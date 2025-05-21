@@ -81,10 +81,11 @@ void MinecraftScene::update(float dt)
     }
 
     glm::vec3 newPos = pos + cameraDelta;
-    world.ensureChunksNear(pos);
+    world.ensureChunksNear(newPos);
+    camera->setPosition(newPos);
 
 
-    const glm::vec3 camMinLocal = { -0.3f, 0.0f,-0.3f };
+   /* const glm::vec3 camMinLocal = { -0.3f, 0.0f,-0.3f };
     const glm::vec3 camMaxLocal = { 0.3f, 1.8f, 0.3f };
     AABB camBox{
       newPos + camMinLocal,
@@ -112,7 +113,7 @@ void MinecraftScene::update(float dt)
         if (hit) break;
     }
     camera->setPosition(newPos);
-
+    */
   /*  if (!hit) {
         camera->setPosition(newPos);
         world.ensureChunksNear(newPos);

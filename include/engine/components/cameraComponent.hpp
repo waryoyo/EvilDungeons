@@ -21,7 +21,7 @@ public:
         float fov = 45.0f,
         float aspect = 1280.0f / 720.0f,
         float near = 0.1f,
-        float far = 50.0f,
+        float far = 100.0f,
         float sensitivity = 0.1f
     );
 
@@ -51,16 +51,15 @@ private:
     float nearPlane;
     float farPlane;
 
-    double xPos;
-    double yPos;
+    double xPos, yPos;
+    float lastX, lastY;
 
-    double lastX;
-    double lastY;
     bool firstMouse;
     bool isActive;
 
     glm::vec3 front;
     glm::vec3 pos;
+    glm::vec3 lastPos;
     glm::vec3 up;
 
     void handleMouse();

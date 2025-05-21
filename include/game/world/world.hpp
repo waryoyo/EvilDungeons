@@ -15,7 +15,7 @@ class Chunk;
 class World {
 public:
 	static constexpr int CHUNK_SIZE = 32;
-	static constexpr int RANGE = 6;
+	static constexpr int HORIZONTAL_RADIUS = 3;
 
 	std::unordered_map<glm::ivec3, std::unique_ptr<Chunk>, Vec3Hash> chunks;
 

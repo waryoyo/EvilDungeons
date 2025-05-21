@@ -24,6 +24,7 @@ Texture::Texture(const std::string& texturePath, GLenum wrapS, GLenum wrapT, GLe
 
     const std::string fullPath = s_basePath + texturePath;
 
+    stbi_set_flip_vertically_on_load(1);
     unsigned char* imageData =
         stbi_load(fullPath.c_str(), &m_width, &m_height, &m_channels, 0);
 
