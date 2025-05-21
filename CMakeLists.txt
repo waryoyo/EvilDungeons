@@ -93,6 +93,8 @@ add_custom_command(TARGET EvilDungeons POST_BUILD
 
 target_include_directories(EvilDungeons PRIVATE
   ${CMAKE_SOURCE_DIR}/include
+  ${CMAKE_SOURCE_DIR}/include/game_engine
+  ${CMAKE_SOURCE_DIR}/include/engine_core
 )
 
 target_link_libraries(EvilDungeons

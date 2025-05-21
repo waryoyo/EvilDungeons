@@ -1,7 +1,7 @@
-﻿// main.cpp : Defines the entry point for the application.
+// main.cpp : Defines the entry point for the application.
 //
 
-#include "main.h"
+#include "main.hpp"
 
 using namespace std;
 
@@ -88,3 +88,4 @@ int main()
     glfwTerminate();
     return 0;
 }
+
