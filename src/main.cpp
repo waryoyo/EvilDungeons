@@ -81,7 +81,7 @@ int main()
             lastTime = currentTime;
         }
 
-        std::string title = "My Game - FPS: " + std::to_string(fps);
+        std::string title = "Not Minecraft - FPS: " + std::to_string(fps);
         glfwSetWindowTitle(window, title.c_str());
 
         int w, h;

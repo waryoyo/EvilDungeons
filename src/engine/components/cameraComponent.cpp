@@ -57,7 +57,9 @@ glm::mat4 CameraComponent::getProjection() const {
 glm::mat4 CameraComponent::getView() const {
     return glm::lookAt(pos, pos + front, up);
 }
-
+float CameraComponent::getPlayerEyeHeight() const {
+    return playerEyeHeight;
+}
 glm::vec3 CameraComponent::getPosition() const {
     return pos;
 }

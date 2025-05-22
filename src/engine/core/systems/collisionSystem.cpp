@@ -1,4 +1,5 @@
 #include <engine/core/systems/collisionSystem.hpp>
+#include <algorithm>
 
 void CollisionSystem::addCollider(ColliderComponent* c) {
     colliders.push_back(c);

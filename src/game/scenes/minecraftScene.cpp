@@ -68,9 +68,20 @@ MinecraftScene::MinecraftScene(GLFWwindow* window)
 
     auto camGO = std::make_unique<GameObject>("MainCamera", this);
     camGO->addComponent(std::make_unique<CameraComponent>(camGO.get(), window, input.get()));
-    camGO->getComponent<CameraComponent>()->setPosition({ 0.0f, 20.0f, 3.0f });
+    camGO->getComponent<CameraComponent>()->setPosition({ 0.0f, 200.0f, 3.0f });
     objects.push_back(std::move(camGO));
     world.ensureChunksNear({ 0.0f, 20.0f, 3.0f });
+
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
+    ImGui::StyleColorsDark();
+
+    // Initialize ImGui for GLFW/OpenGL (do this after creating your window)
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    ImGui_ImplOpenGL3_Init("#version 330");
+
+    ImFont* font = io.Fonts->AddFontDefault();
 
    /* auto worldGO = std::make_unique<GameObject>("World", this);
     worldGO->addComponent(std::make_unique<WorldComponent>(worldGO.get()));
@@ -98,6 +109,10 @@ MinecraftScene::MinecraftScene(GLFWwindow* window)
 
 MinecraftScene::~MinecraftScene()
 {
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
+    
 }
 
 void MinecraftScene::onEnter()
@@ -118,7 +133,22 @@ bool intersectAABB(const glm::vec3& amin, const glm::vec3& amax,
 
 void MinecraftScene::update(float dt)
 {
+
     input->update(window);
+    if (input->wasKeyPressed(GLFW_KEY_ESCAPE) || input->wasKeyPressed(GLFW_KEY_P)) {
+        isPaused = !isPaused;
+        if (isPaused) {
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+
+        } else {
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+            if (auto camera = objects[0]->getComponent<CameraComponent>()) {
+                camera->setFirstMouse(true);
+            }
+        }
+    }
+
+    if (!isPaused){
     float speed = 5.0f * dt;
 
     const auto& camera = objects[0]->getComponent<CameraComponent>(); // ONLY DOING THIS HERE WILL NEVER DO THIS, this is just for testing
@@ -128,26 +158,46 @@ void MinecraftScene::update(float dt)
     glm::vec3 cameraRight = glm::normalize(glm::cross(up, front));
 
     glm::vec3 cameraDelta = glm::vec3(0.0f);
+
+    glm::vec3 frontHorizontal = glm::normalize(glm::vec3(front.x, 0.0f, front.z));
+
+    glm::vec3 rightHorizontal = glm::normalize(glm::vec3(cameraRight.x, 0.0f, cameraRight.z));
+
     if (input->isKeyDown(GLFW_KEY_LEFT_CONTROL)) {
-        speed *= 3.0f;
+        speed *= 1.5f;
     }
-    if (input->isKeyDown(GLFW_KEY_SPACE)) {
-        cameraDelta += speed * up;
-    }
-    if (input->isKeyDown(GLFW_KEY_LEFT_SHIFT)) {
-        cameraDelta -= speed * up;
-    }
+    // if (input->isKeyDown(GLFW_KEY_LEFT_SHIFT)) {
+    //     cameraDelta -= speed * up;
+    // }
     if (input->isKeyDown(GLFW_KEY_W)) {
-        cameraDelta += speed * front;
+        cameraDelta += speed * frontHorizontal;
     }
     if (input->isKeyDown(GLFW_KEY_S)) {
-        cameraDelta -= speed * front;
+        cameraDelta -= speed * frontHorizontal;
     }
     if (input->isKeyDown(GLFW_KEY_A)) {
-        cameraDelta += speed * cameraRight;
+        cameraDelta += speed * rightHorizontal;
     }
     if (input->isKeyDown(GLFW_KEY_D)) {
-        cameraDelta -= speed * cameraRight;
+        cameraDelta -= speed * rightHorizontal;
+    }
+        // Jump input: space key pressed and grounded -> jump
+    if (input->wasKeyPressed(GLFW_KEY_SPACE) && isOnGround) {
+        velocity.y = jumpSpeed;
+        isOnGround = false;
+    }
+
+    velocity.y += gravity * dt;
+
+    // Add vertical velocity to movement delta (vertical movement)
+    cameraDelta.y += velocity.y * dt;
+
+    bool inputMoving = input->isKeyDown(GLFW_KEY_W) || input->isKeyDown(GLFW_KEY_A) ||
+                    input->isKeyDown(GLFW_KEY_S) || input->isKeyDown(GLFW_KEY_D);
+    if (inputMoving and isOnGround){
+        isMoving = true;
+    }else{
+        isMoving = false;
     }
 
     glm::vec3 newPos = pos + cameraDelta;
@@ -181,36 +231,52 @@ void MinecraftScene::update(float dt)
         return false;
     };
 
-    glm::vec3 tryPos = pos;
-    glm::vec3 attempt = newPos;
+    glm::vec3 basePos = pos - glm::vec3(0.0f, camera->getPlayerEyeHeight(), 0.0f) - prevBobOffsetVec;
+    glm::vec3 attempt = basePos + cameraDelta;
 
-    glm::vec3 testX = tryPos; testX.x = attempt.x;
-    if (!isColliding(testX)) tryPos.x = attempt.x;
+    glm::vec3 testX = basePos; testX.x = attempt.x;
+    if (!isColliding(testX)) basePos.x = attempt.x;
 
-    glm::vec3 testY = tryPos; testY.y = attempt.y;
-    if (!isColliding(testY)) tryPos.y = attempt.y;
-
-    glm::vec3 testZ = tryPos; testZ.z = attempt.z;
-    if (!isColliding(testZ)) tryPos.z = attempt.z;
-
-    camera->setPosition(tryPos);
-    world.ensureChunksNear(tryPos);
-
-    if (input->wasKeyPressed(GLFW_KEY_P) || input->wasKeyPressed(GLFW_KEY_ESCAPE)) {
-        if (!isPaused) {
-            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-            isPaused = true;
+    glm::vec3 testY = basePos; testY.y = attempt.y;
+    if (!isColliding(testY)) { 
+        basePos.y = attempt.y;
+        isOnGround = false;
+    } else {
+        // Collided vertically
+        if (velocity.y < 0) {
+            // Landed on ground
+            isOnGround = true;
         }
-        else {
-            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-            isPaused = false;
-            camera->setFirstMouse(true);
-        }
+        velocity.y = 0; // Stop vertical movement on collision
     }
 
-    camera->setIsActive(!isPaused);
+    glm::vec3 testZ = basePos; testZ.z = attempt.z;
+    if (!isColliding(testZ)) basePos.z = attempt.z;
+    
+    bobOffsetVec = glm::vec3(0.0f);
+
+    cameraBasePosition = basePos;
+    
+
+    if (isMoving) {
+        bobTime += dt * bobSpeed;
+        float bobOffset = sin(bobTime) * bobAmount;
+        bobOffsetVec = camera->getUp() * bobOffset;
+    } else{  
+        bobTime = 0.0f;
+    }
+    prevBobOffsetVec = bobOffsetVec;
+    camera->setPosition(cameraBasePosition + bobOffsetVec + glm::vec3(0.0f, camera->getPlayerEyeHeight(), 0.0f));
+    world.ensureChunksNear(basePos);
+
+    }
+
+    if (auto camera = objects[0]->getComponent<CameraComponent>()) {
+        camera->setIsActive(!isPaused);
+    }
     for (const auto& object : objects)
         object->update(dt);
+
 }
 
 void MinecraftScene::render()
@@ -225,6 +291,76 @@ void MinecraftScene::render()
     for (const auto& object : objects)
         object->render(context);
 
+    if (isPaused) {
+        renderPauseMenu();
+    }
+}
+
+void MinecraftScene::renderPauseMenu() {
+    if (!isPaused) return;
+
+    // Start new ImGui frame
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
+
+    // Get main viewport
+    ImGuiViewport* viewport = ImGui::GetMainViewport();
+    
+    // Set up fullscreen window
+    ImGui::SetNextWindowPos(viewport->Pos);
+    ImGui::SetNextWindowSize(viewport->Size);
+    
+    // Push style
+    ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.0f, 0.0f, 0.0f, 0.7f));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+
+    // Create transparent background window
+    if (ImGui::Begin("PauseMenu", nullptr, 
+        ImGuiWindowFlags_NoDecoration | 
+        ImGuiWindowFlags_NoInputs |
+        ImGuiWindowFlags_NoSavedSettings))
+    {
+        ImGui::End();
+    }
+
+    // Create actual menu window
+    ImGui::SetNextWindowPos(viewport->GetCenter(), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+    ImGui::SetNextWindowSize(ImVec2(600, 400));
+    
+    if (ImGui::Begin("Pause Menu", nullptr, 
+        ImGuiWindowFlags_NoResize | 
+        ImGuiWindowFlags_NoCollapse |
+        ImGuiWindowFlags_NoMove))
+    {
+        ImGui::SetCursorPosX((ImGui::GetWindowSize().x - ImGui::CalcTextSize("Game Paused").x) * 0.5f);
+        ImGui::Text("Game Paused");
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::Spacing();
+
+        if (ImGui::Button("Resume", ImVec2(-FLT_MIN, 0))) {
+            isPaused = false;
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+            if (auto camera = objects[0]->getComponent<CameraComponent>()) {
+                camera->setFirstMouse(true);
+            }
+        }
+
+        if (ImGui::Button("Quit", ImVec2(-FLT_MIN, 0))) {
+            glfwSetWindowShouldClose(window, GLFW_TRUE);
+        }
+
+        ImGui::End();
+    }
+
+    // Pop style
+    ImGui::PopStyleVar();
+    ImGui::PopStyleColor();
+
+    // Render ImGui
+    ImGui::Render();
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
 LightSystem* MinecraftScene::getLightSystem() const

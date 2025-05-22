@@ -33,6 +33,7 @@ public:
     glm::vec3 getPosition() const;
     glm::vec3 getFront() const;
     glm::vec3 getUp() const;
+    float getPlayerEyeHeight() const;
     bool getIsActive() const;
     void setIsActive(bool isActive);
     void setPosition(const glm::vec3& pos);
@@ -51,6 +52,8 @@ private:
     float nearPlane;
     float farPlane;
 
+    float playerEyeHeight = 1.8f;
+
     double xPos, yPos;
     float lastX, lastY;
 
@@ -61,6 +64,7 @@ private:
     glm::vec3 pos;
     glm::vec3 lastPos;
     glm::vec3 up;
+
 
     void handleMouse();
     void handleKeyboard(float deltaTime);
