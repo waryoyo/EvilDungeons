@@ -165,23 +165,23 @@ void MinecraftScene::update(float dt)
 
     glm::vec3 rightHorizontal = glm::normalize(glm::vec3(cameraRight.x, 0.0f, cameraRight.z));
 
-    if (isOnGround) {
-        if (input->isKeyDown(GLFW_KEY_LEFT_CONTROL)) {
-            speed *= 2.0f;
-        }
-
-        if (input->isKeyDown(GLFW_KEY_W)) {
-            cameraDelta += speed * frontHorizontal;
-        }
-        if (input->isKeyDown(GLFW_KEY_S)) {
-            cameraDelta -= speed * frontHorizontal;
-        }
-        if (input->isKeyDown(GLFW_KEY_A)) {
-            cameraDelta += speed * rightHorizontal;
-        }
-        if (input->isKeyDown(GLFW_KEY_D)) {
-            cameraDelta -= speed * rightHorizontal;
-        }
+    if (input->isKeyDown(GLFW_KEY_LEFT_CONTROL)) {
+        speed *= 2.0f;
+    }
+    // if (input->isKeyDown(GLFW_KEY_LEFT_SHIFT)) {
+    //     cameraDelta -= speed * up;
+    // }
+    if (input->isKeyDown(GLFW_KEY_W)) {
+        cameraDelta += speed * frontHorizontal;
+    }
+    if (input->isKeyDown(GLFW_KEY_S)) {
+        cameraDelta -= speed * frontHorizontal;
+    }
+    if (input->isKeyDown(GLFW_KEY_A)) {
+        cameraDelta += speed * rightHorizontal;
+    }
+    if (input->isKeyDown(GLFW_KEY_D)) {
+        cameraDelta -= speed * rightHorizontal;
     }
         // Jump input: space key pressed and grounded -> jump
     if (input->wasKeyPressed(GLFW_KEY_SPACE) && isOnGround) {

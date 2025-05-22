@@ -14,6 +14,9 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
+#define MINIAUDIO_IMPLEMENTATION
+#include "miniaudio.h"
+
 #include <stb_image.h>
 
 #include <engine/graphics/shader.hpp>

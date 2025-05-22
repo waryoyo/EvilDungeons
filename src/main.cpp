@@ -4,6 +4,10 @@
 #include "main.h"
 #include <chrono>
 
+// Audio
+ma_decoder decoder;
+ma_device device;
+
 auto lastTime = std::chrono::high_resolution_clock::now();
 int frameCount = 0;
 float fps = 0.0f;
@@ -13,6 +17,7 @@ using namespace std;
 static int screenWidth = 1280;
 static int screenHeight = 720;
 
+// OpenGL debug callback
 static void GLAPIENTRY MessageCallback(GLenum source,
     GLenum type,
     GLuint id,
@@ -27,8 +32,16 @@ static void GLAPIENTRY MessageCallback(GLenum source,
         << " | id=" << id << "\n";
 }
 
+// Audio callback
+void data_callback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint32 frameCount)
+{
+    ma_decoder_read_pcm_frames((ma_decoder*)pDevice->pUserData, pOutput, frameCount, NULL);
+    (void)pInput;
+}
+
 int main()
 {
+    // Initialize GLFW
     if (!glfwInit()) {
         std::cerr << "GLFW init failed!\n";
         return -1;
@@ -39,7 +52,6 @@ int main()
     glfwWindowHint(GLFW_SAMPLES, 4);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
-
 
     GLFWwindow* window = glfwCreateWindow(screenWidth, screenHeight, "Dark Dungeon", nullptr, nullptr);
     if (!window) {
@@ -55,6 +67,8 @@ int main()
         std::cerr << "Failed to initialize GLAD\n";
         return -1;
     }
+
+    // OpenGL settings
     glEnable(GL_DEBUG_OUTPUT);
     glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
     glDebugMessageCallback(MessageCallback, nullptr);
@@ -65,12 +79,41 @@ int main()
     glCullFace(GL_BACK);
     glFrontFace(GL_CCW);
 
+    // Load scene
     auto sceneManager = SceneManager(window);
     sceneManager.push(std::make_unique<MinecraftScene>(window));
+
     float lastFrameTime = 0.0f;
 
+    // ---------- AUDIO SETUP ----------
+    if (ma_decoder_init_file("assets/music/minecraftsoundtrack.mp3", NULL, &decoder) != MA_SUCCESS) {
+        std::cerr << "Failed to load audio file\n";
+        return -1;
+    }
+
+    ma_device_config deviceConfig = ma_device_config_init(ma_device_type_playback);
+    deviceConfig.playback.format = decoder.outputFormat;
+    deviceConfig.playback.channels = decoder.outputChannels;
+    deviceConfig.sampleRate = decoder.outputSampleRate;
+    deviceConfig.dataCallback = data_callback;
+    deviceConfig.pUserData = &decoder;
+
+    if (ma_device_init(NULL, &deviceConfig, &device) != MA_SUCCESS) {
+        std::cerr << "Failed to open playback device\n";
+        ma_decoder_uninit(&decoder);
+        return -1;
+    }
+
+    if (ma_device_start(&device) != MA_SUCCESS) {
+        std::cerr << "Failed to start playback device\n";
+        ma_device_uninit(&device);
+        ma_decoder_uninit(&decoder);
+        return -1;
+    }
+
+    // ---------- GAME LOOP ----------
     while (!glfwWindowShouldClose(window)) {
-        
+
         frameCount++;
         auto currentTime = std::chrono::high_resolution_clock::now();
         float dt = std::chrono::duration<float>(currentTime - lastTime).count();
@@ -93,20 +136,22 @@ int main()
         glViewport(0, 0, w, h);
         glfwPollEvents();
 
-        glClearColor(0.2f, 0.1f, 0.1f, 1.0f); 
+        glClearColor(0.2f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         sceneManager.update(deltaTime);
         sceneManager.render();
 
         glfwSwapBuffers(window);
-
     }
 
+    // Clean up audio
+    ma_device_uninit(&device);
+    ma_decoder_uninit(&decoder);
     glfwTerminate();
     return 0;
 }
 
 void renderSky() {
-
+    // Empty placeholder
 }
