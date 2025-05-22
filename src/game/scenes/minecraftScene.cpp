@@ -68,7 +68,7 @@ MinecraftScene::MinecraftScene(GLFWwindow* window)
 
     auto camGO = std::make_unique<GameObject>("MainCamera", this);
     camGO->addComponent(std::make_unique<CameraComponent>(camGO.get(), window, input.get()));
-    camGO->getComponent<CameraComponent>()->setPosition({ 0.0f, 200.0f, 3.0f });
+    camGO->getComponent<CameraComponent>()->setPosition({ 0.0f, 50.0f, 3.0f });
     objects.push_back(std::move(camGO));
     world.ensureChunksNear({ 0.0f, 20.0f, 3.0f });
 
@@ -82,6 +82,8 @@ MinecraftScene::MinecraftScene(GLFWwindow* window)
     ImGui_ImplOpenGL3_Init("#version 330");
 
     ImFont* font = io.Fonts->AddFontDefault();
+    io.Fonts->AddFontFromFileTTF("assets/fonts/Minecraftia-Regular.ttf", 36.0f);
+    io.Fonts->Build();
 
    /* auto worldGO = std::make_unique<GameObject>("World", this);
     worldGO->addComponent(std::make_unique<WorldComponent>(worldGO.get()));
@@ -105,7 +107,7 @@ MinecraftScene::MinecraftScene(GLFWwindow* window)
 
     if (!ShaderManager::Get("skyShader"))
         ShaderManager::Load("skyShader", "sky/basic.vert", "sky/basic.frag");
-}
+    }
 
 MinecraftScene::~MinecraftScene()
 {
@@ -133,7 +135,7 @@ bool intersectAABB(const glm::vec3& amin, const glm::vec3& amax,
 
 void MinecraftScene::update(float dt)
 {
-
+    if (!isFirstTime){
     input->update(window);
     if (input->wasKeyPressed(GLFW_KEY_ESCAPE) || input->wasKeyPressed(GLFW_KEY_P)) {
         isPaused = !isPaused;
@@ -146,7 +148,7 @@ void MinecraftScene::update(float dt)
                 camera->setFirstMouse(true);
             }
         }
-    }
+    }}
 
     if (!isPaused){
     float speed = 5.0f * dt;
@@ -156,30 +158,30 @@ void MinecraftScene::update(float dt)
     glm::vec3 front = camera->getFront();
     glm::vec3 up = camera->getUp();
     glm::vec3 cameraRight = glm::normalize(glm::cross(up, front));
-
+    
     glm::vec3 cameraDelta = glm::vec3(0.0f);
 
     glm::vec3 frontHorizontal = glm::normalize(glm::vec3(front.x, 0.0f, front.z));
 
     glm::vec3 rightHorizontal = glm::normalize(glm::vec3(cameraRight.x, 0.0f, cameraRight.z));
 
-    if (input->isKeyDown(GLFW_KEY_LEFT_CONTROL)) {
-        speed *= 1.5f;
-    }
-    // if (input->isKeyDown(GLFW_KEY_LEFT_SHIFT)) {
-    //     cameraDelta -= speed * up;
-    // }
-    if (input->isKeyDown(GLFW_KEY_W)) {
-        cameraDelta += speed * frontHorizontal;
-    }
-    if (input->isKeyDown(GLFW_KEY_S)) {
-        cameraDelta -= speed * frontHorizontal;
-    }
-    if (input->isKeyDown(GLFW_KEY_A)) {
-        cameraDelta += speed * rightHorizontal;
-    }
-    if (input->isKeyDown(GLFW_KEY_D)) {
-        cameraDelta -= speed * rightHorizontal;
+    if (isOnGround) {
+        if (input->isKeyDown(GLFW_KEY_LEFT_CONTROL)) {
+            speed *= 2.0f;
+        }
+
+        if (input->isKeyDown(GLFW_KEY_W)) {
+            cameraDelta += speed * frontHorizontal;
+        }
+        if (input->isKeyDown(GLFW_KEY_S)) {
+            cameraDelta -= speed * frontHorizontal;
+        }
+        if (input->isKeyDown(GLFW_KEY_A)) {
+            cameraDelta += speed * rightHorizontal;
+        }
+        if (input->isKeyDown(GLFW_KEY_D)) {
+            cameraDelta -= speed * rightHorizontal;
+        }
     }
         // Jump input: space key pressed and grounded -> jump
     if (input->wasKeyPressed(GLFW_KEY_SPACE) && isOnGround) {
@@ -294,47 +296,48 @@ void MinecraftScene::render()
     if (isPaused) {
         renderPauseMenu();
     }
+    if (isFirstTime) {
+        renderStartMenu();
+    }
+
 }
 
 void MinecraftScene::renderPauseMenu() {
-    if (!isPaused) return;
+    if (!isPaused or isFirstTime) return;
 
-    // Start new ImGui frame
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
 
-    // Get main viewport
     ImGuiViewport* viewport = ImGui::GetMainViewport();
-    
-    // Set up fullscreen window
     ImGui::SetNextWindowPos(viewport->Pos);
     ImGui::SetNextWindowSize(viewport->Size);
-    
-    // Push style
-    ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.0f, 0.0f, 0.0f, 0.7f));
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
 
-    // Create transparent background window
-    if (ImGui::Begin("PauseMenu", nullptr, 
+    ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.f, 0.f, 0.f, 0.7f));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.f);
+
+    if (ImGui::Begin("StartMenu", nullptr, 
         ImGuiWindowFlags_NoDecoration | 
-        ImGuiWindowFlags_NoInputs |
-        ImGuiWindowFlags_NoSavedSettings))
+        ImGuiWindowFlags_NoInputs | 
+        ImGuiWindowFlags_NoSavedSettings)) 
     {
         ImGui::End();
     }
 
-    // Create actual menu window
     ImGui::SetNextWindowPos(viewport->GetCenter(), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
     ImGui::SetNextWindowSize(ImVec2(600, 400));
-    
-    if (ImGui::Begin("Pause Menu", nullptr, 
+    ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[1]);  // assuming Fonts[1] is bigger; load a bigger font before
+
+    if (ImGui::Begin("Pause Menu", nullptr,
         ImGuiWindowFlags_NoResize | 
-        ImGuiWindowFlags_NoCollapse |
-        ImGuiWindowFlags_NoMove))
+        ImGuiWindowFlags_NoCollapse | 
+        ImGuiWindowFlags_NoMove)) 
     {
-        ImGui::SetCursorPosX((ImGui::GetWindowSize().x - ImGui::CalcTextSize("Game Paused").x) * 0.5f);
-        ImGui::Text("Game Paused");
+        // Push your Minecraft font here to apply to everything inside this window
+
+        ImGui::SetCursorPosX((ImGui::GetWindowSize().x - ImGui::CalcTextSize("Paused").x) * 0.5f);
+        ImGui::Text("Paused");
+
         ImGui::Spacing();
         ImGui::Separator();
         ImGui::Spacing();
@@ -347,21 +350,88 @@ void MinecraftScene::renderPauseMenu() {
             }
         }
 
-        if (ImGui::Button("Quit", ImVec2(-FLT_MIN, 0))) {
+        if (ImGui::Button("Exit", ImVec2(-FLT_MIN, 0))) {
             glfwSetWindowShouldClose(window, GLFW_TRUE);
         }
+
+        ImGui::PopFont();  // pop the Minecraft font here
 
         ImGui::End();
     }
 
-    // Pop style
     ImGui::PopStyleVar();
     ImGui::PopStyleColor();
 
-    // Render ImGui
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
+
+void MinecraftScene::renderStartMenu() {
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
+
+    ImGuiViewport* viewport = ImGui::GetMainViewport();
+    ImGui::SetNextWindowPos(viewport->Pos);
+    ImGui::SetNextWindowSize(viewport->Size);
+
+    ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.f, 0.f, 0.f, 0.7f));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.f);
+
+    if (ImGui::Begin("StartMenu", nullptr, 
+        ImGuiWindowFlags_NoDecoration | 
+        ImGuiWindowFlags_NoInputs | 
+        ImGuiWindowFlags_NoSavedSettings)) 
+    {
+        ImGui::End();
+    }
+
+    ImGui::SetNextWindowPos(viewport->GetCenter(), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+    ImGui::SetNextWindowSize(ImVec2(600, 400));
+    ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[1]);  // assuming Fonts[1] is bigger; load a bigger font before
+
+    if (ImGui::Begin("Start Menu", nullptr,
+        ImGuiWindowFlags_NoResize | 
+        ImGuiWindowFlags_NoCollapse | 
+        ImGuiWindowFlags_NoMove)) 
+    {
+        // Push your Minecraft font here to apply to everything inside this window
+
+        ImGui::SetCursorPosX((ImGui::GetWindowSize().x - ImGui::CalcTextSize("Not Minecraft hehe").x) * 0.5f);
+        ImGui::Text("Not Minecraft hehe");
+
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::Spacing();
+
+        if (ImGui::Button("Start", ImVec2(-FLT_MIN, 0))) {
+            isPaused = false;
+            isFirstTime = false;
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+            if (auto camera = objects[0]->getComponent<CameraComponent>()) {
+                camera->setFirstMouse(true);
+            }
+        }
+
+        if (ImGui::Button("Exit", ImVec2(-FLT_MIN, 0))) {
+            glfwSetWindowShouldClose(window, GLFW_TRUE);
+        }
+
+        ImGui::PopFont();  // pop the Minecraft font here
+
+        ImGui::End();
+    }
+
+    ImGui::PopStyleVar();
+    ImGui::PopStyleColor();
+
+    ImGui::Render();
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+}
+
+
 
 LightSystem* MinecraftScene::getLightSystem() const
 {

@@ -40,6 +40,7 @@ private:
     void renderSky();
     unsigned int loadCubemap();
     void renderPauseMenu();
+    void renderStartMenu();
     bool showPauseMenu = false;
     
     // Collision and movement
@@ -78,10 +79,12 @@ private:
     float cameraRadius = 0.3f;
 
     // Movement parameters
-    bool isPaused = false;
+    bool isFirstTime = true;
+    bool isPaused = true;
     bool isMoving = false;
     float bobTime = 0.0f;
     float bobSpeed = 20.0f;
+    
     // commented cause it causes collision errors
     // float bobAmount = 0.05f;
     float bobAmount = 0.0f;
