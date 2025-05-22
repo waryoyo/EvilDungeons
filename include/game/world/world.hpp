@@ -24,7 +24,6 @@ public:
 
 	void generate();
 	void render(const RenderContext& context) const;
-	glm::vec3 collideAndSlideCamera(const glm::vec3& oldPos, const glm::vec3& desiredPos);
 	// Returns a pointer to the center chunk (the one at lastCenter)
 	Chunk* getCenterChunk();
 
