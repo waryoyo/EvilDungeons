@@ -84,12 +84,48 @@ void MinecraftScene::update(float dt)
     glm::vec3 newPos = pos + cameraDelta;
     world.ensureChunksNear(newPos);
 
-    // Use new efficient collision check with only top blocks of center chunk
-    bool hit = world.checkCollisionWithTopBlocks(newPos, 0.5f);
-    if (!hit) {
-        camera->setPosition(newPos);
-        world.ensureChunksNear(newPos);
-    }
+    const glm::vec3 cameraHalfExtents(0.3f, 0.9f, 0.3f);
+    auto isColliding = [&](const glm::vec3& testPos) -> bool {
+
+        glm::ivec3 minBlock = glm::floor(testPos - cameraHalfExtents);
+        glm::ivec3 maxBlock = glm::floor(testPos + cameraHalfExtents);
+
+        for (int x = minBlock.x; x <= maxBlock.x; x++) {
+            for (int y = minBlock.y; y <= maxBlock.y; y++) {
+                for (int z = minBlock.z; z <= maxBlock.z; z++) {
+                    if (world.getBlock(x, y, z) != BlockType::Air) {
+                        // Block is solid, check AABB overlap
+                        glm::vec3 blockMin(x, y, z);
+                        glm::vec3 blockMax = blockMin + glm::vec3(1.0f);
+                        glm::vec3 camMin = testPos - cameraHalfExtents;
+                        glm::vec3 camMax = testPos + cameraHalfExtents;
+
+                        bool overlap = (camMin.x < blockMax.x && camMax.x > blockMin.x) &&
+                                       (camMin.y < blockMax.y && camMax.y > blockMin.y) &&
+                                       (camMin.z < blockMax.z && camMax.z > blockMin.z);
+                                       
+                        if (overlap) return true;
+                    }
+                }
+            }
+        }
+        return false;
+    };
+
+    glm::vec3 tryPos = pos;
+    glm::vec3 attempt = newPos;
+
+    glm::vec3 testX = tryPos; testX.x = attempt.x;
+    if (!isColliding(testX)) tryPos.x = attempt.x;
+
+    glm::vec3 testY = tryPos; testY.y = attempt.y;
+    if (!isColliding(testY)) tryPos.y = attempt.y;
+
+    glm::vec3 testZ = tryPos; testZ.z = attempt.z;
+    if (!isColliding(testZ)) tryPos.z = attempt.z;
+
+    camera->setPosition(tryPos);
+    world.ensureChunksNear(tryPos);
 
     if (input->wasKeyPressed(GLFW_KEY_P) || input->wasKeyPressed(GLFW_KEY_ESCAPE)) {
         if (!isPaused) {

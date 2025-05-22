@@ -13,7 +13,17 @@ void World::render(const RenderContext& context) const {
 }
 
 BlockType World::getBlock(int x, int y, int z) const {
-    return BlockType::Air;
+    // Convert world coordinates to chunk and local block coordinates
+    int chunkX = x >= 0 ? x / CHUNK_SIZE : ((x + 1) / CHUNK_SIZE) - 1;
+    int chunkY = y >= 0 ? y / CHUNK_SIZE : ((y + 1) / CHUNK_SIZE) - 1;
+    int chunkZ = z >= 0 ? z / CHUNK_SIZE : ((z + 1) / CHUNK_SIZE) - 1;
+    glm::ivec3 chunkPos(chunkX, chunkY, chunkZ);
+    auto it = chunks.find(chunkPos);
+    if (it == chunks.end()) return BlockType::Air;
+    int localX = x - chunkX * CHUNK_SIZE;
+    int localY = y - chunkY * CHUNK_SIZE;
+    int localZ = z - chunkZ * CHUNK_SIZE;
+    return it->second->getBlock({localX, localY, localZ});
 }
 
 void World::ensureChunksNear(const glm::vec3& playerPos) {
@@ -73,23 +83,4 @@ Chunk* World::getCenterChunk() {
         return it->second.get();
     }
     return nullptr;
-}
-
-bool World::checkCollisionWithTopBlocks(const glm::vec3& pos, float radius) {
-    Chunk* centerChunk = getCenterChunk();
-    if (!centerChunk) return false;
-    // Convert world position to chunk-local coordinates
-    int localX = static_cast<int>(pos.x) % CHUNK_SIZE;
-    int localZ = static_cast<int>(pos.z) % CHUNK_SIZE;
-    if (localX < 0) localX += CHUNK_SIZE;
-    if (localZ < 0) localZ += CHUNK_SIZE;
-    int topY = centerChunk->getTopBlockY(localX, localZ);
-    if (topY < 0) return false;
-    // Simple AABB collision: check if pos is within the top block's bounds
-    glm::vec3 blockMin(lastCenter.x * CHUNK_SIZE + localX, topY, lastCenter.z * CHUNK_SIZE + localZ);
-    glm::vec3 blockMax = blockMin + glm::vec3(1.0f);
-    // Sphere-AABB collision
-    glm::vec3 closestPoint = glm::clamp(pos, blockMin, blockMax);
-    float distSq = glm::distance(pos, closestPoint);
-    return distSq < radius * radius;
 }
