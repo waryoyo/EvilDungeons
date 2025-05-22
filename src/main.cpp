@@ -106,3 +106,7 @@ int main()
     glfwTerminate();
     return 0;
 }
+
+void renderSky() {
+
+}

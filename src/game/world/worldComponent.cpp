@@ -1,6 +1,6 @@
 #include <game/world/worldComponent.hpp>
-#include <engine/core/gameObject.hpp>
 #include <game/world/chunk.hpp>
+#include <engine/core/gameObject.hpp>
 
 WorldComponent::WorldComponent(GameObject* owner) : Component(owner)
 {

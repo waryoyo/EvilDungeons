@@ -22,4 +22,4 @@
 #include <engine/graphics/model.hpp>
 #include <engine/core/sceneManager.hpp>
 
-#include <game/scenes/MinecraftScene.hpp>
+#include <game/scenes/minecraftScene.hpp>

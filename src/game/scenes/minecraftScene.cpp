@@ -1,7 +1,57 @@
 #include <game/scenes/minecraftScene.hpp>
 #include <game/world/worldComponent.hpp>
 #include <game/world/chunk.hpp>
+#include <engine/graphics/texture.hpp>
 
+
+unsigned int skyboxVAO, skyboxVBO;
+unsigned int cubemapTexture;
+
+
+float skyboxVertices[] = {
+    // positions
+    -1.0f,  1.0f, -1.0f,
+    -1.0f, -1.0f, -1.0f,
+     1.0f, -1.0f, -1.0f,
+     1.0f, -1.0f, -1.0f,
+     1.0f,  1.0f, -1.0f,
+    -1.0f,  1.0f, -1.0f,
+
+    -1.0f, -1.0f,  1.0f,
+    -1.0f, -1.0f, -1.0f,
+    -1.0f,  1.0f, -1.0f,
+    -1.0f,  1.0f, -1.0f,
+    -1.0f,  1.0f,  1.0f,
+    -1.0f, -1.0f,  1.0f,
+
+     1.0f, -1.0f, -1.0f,
+     1.0f, -1.0f,  1.0f,
+     1.0f,  1.0f,  1.0f,
+     1.0f,  1.0f,  1.0f,
+     1.0f,  1.0f, -1.0f,
+     1.0f, -1.0f, -1.0f,
+
+    -1.0f, -1.0f,  1.0f,
+    -1.0f,  1.0f,  1.0f,
+     1.0f,  1.0f,  1.0f,
+     1.0f,  1.0f,  1.0f,
+     1.0f, -1.0f,  1.0f,
+    -1.0f, -1.0f,  1.0f,
+
+    -1.0f,  1.0f, -1.0f,
+     1.0f,  1.0f, -1.0f,
+     1.0f,  1.0f,  1.0f,
+     1.0f,  1.0f,  1.0f,
+    -1.0f,  1.0f,  1.0f,
+    -1.0f,  1.0f, -1.0f,
+
+    -1.0f, -1.0f, -1.0f,
+    -1.0f, -1.0f,  1.0f,
+     1.0f, -1.0f, -1.0f,
+     1.0f, -1.0f, -1.0f,
+    -1.0f, -1.0f,  1.0f,
+     1.0f, -1.0f,  1.0f
+};
 
 struct AABB {
     glm::vec3 min;
@@ -25,6 +75,25 @@ MinecraftScene::MinecraftScene(GLFWwindow* window)
    /* auto worldGO = std::make_unique<GameObject>("World", this);
     worldGO->addComponent(std::make_unique<WorldComponent>(worldGO.get()));
     objects.push_back(std::move(worldGO));*/
+    glCreateVertexArrays(1, &skyboxVAO);
+    glCreateBuffers(1, &skyboxVBO);
+
+    glNamedBufferData(skyboxVBO,
+        sizeof(skyboxVertices),
+        skyboxVertices,
+        GL_STATIC_DRAW);
+
+    glVertexArrayVertexBuffer(skyboxVAO, 0, skyboxVBO, 0, 3 * sizeof(float));
+
+    glVertexArrayAttribFormat(skyboxVAO, 0, 3, GL_FLOAT, GL_FALSE, 0);
+    glVertexArrayAttribBinding(skyboxVAO, 0, 0);
+    glEnableVertexArrayAttrib(skyboxVAO, 0);
+
+    cubemapTexture = loadCubemap();
+
+
+    if (!ShaderManager::Get("skyShader"))
+        ShaderManager::Load("skyShader", "sky/basic.vert", "sky/basic.frag");
 }
 
 MinecraftScene::~MinecraftScene()
@@ -149,14 +218,71 @@ void MinecraftScene::render()
     const auto& camera = objects[0]->getComponent<CameraComponent>(); // ONLY DOING THIS HERE WILL NEVER DO THIS, this is just for testing
     const auto VP = camera->getProjection() * camera->getView();
     RenderContext context = RenderContext(CameraData(camera->getPosition(), VP), {});
+    renderSky();
 
     world.render(context);
 
     for (const auto& object : objects)
         object->render(context);
+
 }
 
 LightSystem* MinecraftScene::getLightSystem() const
 {
     return lightSystem.get();
 }
+
+unsigned int MinecraftScene::loadCubemap()
+{
+    stbi_set_flip_vertically_on_load(0);
+    unsigned int textureID;
+    glGenTextures(1, &textureID);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
+
+    int width, height, nrChannels;
+    for (unsigned int i = 0; i < faces.size(); i++)
+    {
+        unsigned char *data = stbi_load(faces[i].c_str(), &width, &height, &nrChannels, 0);
+        if (data)
+        {
+            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
+                         0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data
+            );
+            stbi_image_free(data);
+        }
+        else
+        {
+            std::cout << "Cubemap tex failed to load at path: " << faces[i] << std::endl;
+            stbi_image_free(data);
+        }
+    }
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+    stbi_set_flip_vertically_on_load(1);
+    return textureID;
+}
+
+void MinecraftScene::renderSky() {
+    if (!ShaderManager::Get("skyShader")) {
+        std::cerr << "skyShader not loaded" << '\n';
+        return;
+    }
+    const auto shader = ShaderManager::Get("skyShader");
+
+    const auto& camera = objects[0]->getComponent<CameraComponent>(); // ONLY DOING THIS HERE WILL NEVER DO THIS, this is just for testing
+    const auto projection = camera->getProjection();
+    const auto view = glm::mat4(glm::mat3(camera->getView()));
+    glDepthMask(GL_FALSE);
+    shader->use();
+    shader->setMat4("view", view);
+    shader->setMat4("projection", projection);
+    glBindVertexArray(skyboxVAO);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
+    glDrawArrays(GL_TRIANGLES, 0, 36);
+    glDepthMask(GL_TRUE);
+    
+};

@@ -1,7 +1,7 @@
 #include <game/world/chunk.hpp>
 
 #include <engine/graphics/renderable/IRenderable.hpp>
-#include <engine/graphics/renderable/meshRenderable.hpp>
+#include <engine/graphics/renderable/MeshRenderable.hpp>
 
 #include <engine/graphics/meshFactory.hpp>
 #include <engine/graphics/factories/materialFactory.hpp>

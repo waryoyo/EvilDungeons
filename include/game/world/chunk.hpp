@@ -18,8 +18,8 @@ public:
     ~Chunk();
     void generate();
     void buildMesh();
-    void render(const RenderContext& context);
 
+    void render(const RenderContext& context);
     BlockType getBlock(glm::ivec3 pos) const;
     const glm::ivec3& getPosition() const;
 
