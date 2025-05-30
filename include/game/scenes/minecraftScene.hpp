@@ -93,6 +93,8 @@ private:
     bool isOnGround = true;             
     float gravity = -10.8f;            
     float jumpSpeed = 5.0f;
+
+    bool isUnderWater = false;
     // Window dimensions
     int screenWidth = 1280;
     int screenHeight = 720;

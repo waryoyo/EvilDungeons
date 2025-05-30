@@ -158,7 +158,11 @@ void MinecraftScene::update(float dt)
     glm::vec3 front = camera->getFront();
     glm::vec3 up = camera->getUp();
     glm::vec3 cameraRight = glm::normalize(glm::cross(up, front));
-    
+    // if (world.getBlock(floor(pos.x), floor(pos.y), floor(pos.z)) == BlockType::Water) {
+    //     isUnderWater = true;
+    // } else {
+    //     isUnderWater = false;
+    // }
     glm::vec3 cameraDelta = glm::vec3(0.0f);
 
     glm::vec3 frontHorizontal = glm::normalize(glm::vec3(front.x, 0.0f, front.z));
@@ -183,11 +187,27 @@ void MinecraftScene::update(float dt)
     if (input->isKeyDown(GLFW_KEY_D)) {
         cameraDelta -= speed * rightHorizontal;
     }
-        // Jump input: space key pressed and grounded -> jump
-    if (input->wasKeyPressed(GLFW_KEY_SPACE) && isOnGround) {
+    // Jump: Only when grounded and not underwater
+    if (input->wasKeyPressed(GLFW_KEY_SPACE) && isOnGround && !isUnderWater) {
         velocity.y = jumpSpeed;
         isOnGround = false;
     }
+
+    // Underwater movement: float upward when holding space
+    if (isUnderWater) {
+        gravity = -2.0f; // gentle downward force to simulate buoyancy
+
+        if (input->isKeyDown(GLFW_KEY_SPACE)) {
+            cameraDelta += speed * up; // reduced speed for upward movement
+        }
+
+        if (input->isKeyDown(GLFW_KEY_LEFT_SHIFT)) {
+            cameraDelta -= speed * up * 0.5f; // swim down
+        }
+    } else {
+        gravity = -10.8f; // reset to normal gravity when not underwater
+    }
+
 
     velocity.y += gravity * dt;
 
@@ -215,6 +235,10 @@ void MinecraftScene::update(float dt)
             for (int y = minBlock.y; y <= maxBlock.y; y++) {
                 for (int z = minBlock.z; z <= maxBlock.z; z++) {
                     if (world.getBlock(x, y, z) != BlockType::Air) {
+                        if (world.getBlock(x, y, z) == BlockType::Water){
+                            isUnderWater = true;
+                        } else {
+                            isUnderWater = false;
                         // Block is solid, check AABB overlap
                         glm::vec3 blockMin(x, y, z);
                         glm::vec3 blockMax = blockMin + glm::vec3(1.0f);
@@ -226,7 +250,7 @@ void MinecraftScene::update(float dt)
                                        (camMin.z < blockMax.z && camMax.z > blockMin.z);
                                        
                         if (overlap) return true;
-                    }
+                    }   }
                 }
             }
         }
@@ -289,6 +313,18 @@ void MinecraftScene::render()
     renderSky();
 
     world.render(context);
+    // if (isUnderWater) {
+    //     glDisable(GL_DEPTH_TEST);
+    //     glEnable(GL_BLEND);
+    //     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    //     // drawFullScreenQuad(glm::vec4(0.0f, 0.4f, 0.7f, 0.4f)); // blue tint
+
+    //     glDisable(GL_BLEND);
+    //     glEnable(GL_DEPTH_TEST);
+    // }
+    // glEnable(GL_BLEND);
+    // glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     for (const auto& object : objects)
         object->render(context);

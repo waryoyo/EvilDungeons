@@ -19,7 +19,8 @@ public:
     void generate();
     void buildMesh();
 
-    void render(const RenderContext& context);
+    void renderOpaque(const RenderContext& context) const;
+    void renderTransparent(const RenderContext& context) const;
     BlockType getBlock(glm::ivec3 pos) const;
     const glm::ivec3& getPosition() const;
 
@@ -35,7 +36,11 @@ private:
     glm::ivec3 position;
     BlockType blocks[SIZE][SIZE][SIZE] = { BlockType::Air };
     std::unique_ptr<IRenderable> mesh;
+    std::unique_ptr<IRenderable> opaqueMesh;
+    std::unique_ptr<IRenderable> transparentMesh;
     std::unique_ptr<EmissiveBinder> emissiveBinder;
+
+
     Texture atlas;
     std::vector<Quad> greedyMesh(std::vector<uint32_t>& data);
     void addVerticesIndices(const std::vector<Quad>& quads,
@@ -49,6 +54,15 @@ private:
     );
 
     bool isAir(glm::ivec3 pos) const;
-    GLuint VAO, VBO, EBO;
+    bool isTransparent(glm::ivec3 pos) const;
 
+    // Add these for opaque mesh
+    GLuint opaqueVAO = 0;
+    GLuint opaqueVBO = 0;
+    GLuint opaqueEBO = 0;
+
+    // Add these for transparent mesh
+    GLuint transparentVAO = 0;
+    GLuint transparentVBO = 0;
+    GLuint transparentEBO = 0;
 };

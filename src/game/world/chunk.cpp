@@ -24,7 +24,8 @@ struct BlockTiles {
 static const std::unordered_map<BlockType, BlockTiles> blockTileMap = {
     { BlockType::Dirt,   { {1,0}, {1,0}, {1,0} } },
     { BlockType::Grass,  { {0,0}, {1,0}, {2,0} } },
-    { BlockType::Stone,  { {3,0}, {3,0}, {3,0} } },
+    { BlockType::Water,  { {3,0}, {3,0}, {3,0} } },
+    { BlockType::Sand,   { {0,11}, {0,11}, {0,11} }}
 };
 
 const glm::ivec3 faceNormals[6] = {
@@ -72,10 +73,17 @@ const glm::ivec3 vAxes[6] = {
 
 bool Chunk::isAir(glm::ivec3 pos) const {
     if (pos.x < 0 || pos.x >= SIZE || pos.y < 0 || pos.y >= SIZE || pos.z < 0 || pos.z >= SIZE)
-        return true;
+        return true; // outside chunk treated as air (or you might want to check neighboring chunks)
     return blocks[pos.x][pos.y][pos.z] == BlockType::Air;
-
 }
+
+bool Chunk::isTransparent(glm::ivec3 pos) const {
+    if (pos.x < 0 || pos.x >= SIZE || pos.y < 0 || pos.y >= SIZE || pos.z < 0 || pos.z >= SIZE)
+        return true; // or false depending on your world setup
+    auto block = blocks[pos.x][pos.y][pos.z];
+    return block == BlockType::Air || block == BlockType::Water;
+}
+
 
 
 Chunk::Chunk(glm::ivec3 position) : position(position), atlas("terrain.png")
@@ -88,12 +96,19 @@ Chunk::Chunk(glm::ivec3 position) : position(position), atlas("terrain.png")
     emissiveBinder = std::make_unique<EmissiveBinder>(glm::vec3(1.0f, 1.0f, 1.0f));
 }
 
-Chunk::~Chunk()
-{
-    glDeleteVertexArrays(1, &VAO);
-    glDeleteBuffers(1, &VBO);
-    glDeleteBuffers(1, &EBO);
+Chunk::~Chunk() {
+    if (opaqueVAO) {
+        glDeleteVertexArrays(1, &opaqueVAO);
+        glDeleteBuffers(1, &opaqueVBO);
+        glDeleteBuffers(1, &opaqueEBO);
+    }
+    if (transparentVAO) {
+        glDeleteVertexArrays(1, &transparentVAO);
+        glDeleteBuffers(1, &transparentVBO);
+        glDeleteBuffers(1, &transparentEBO);
+    }
 }
+
 
 void Chunk::generate() {
     static FastNoiseLite noise;
@@ -107,7 +122,7 @@ void Chunk::generate() {
     int worldX0 = position.x * SIZE;
     int worldY0 = position.y * SIZE;
     int worldZ0 = position.z * SIZE;
-
+    int water_level = 6;
     for (int x = 0; x < SIZE; x++) {
         for (int z = 0; z < SIZE; z++) {
             float n = noise.GetNoise(float(worldX0 + x), float(worldZ0 + z));
@@ -123,8 +138,17 @@ void Chunk::generate() {
                     blocks[x][y][z] = BlockType::Air;
                 }
             }
+            for (int y = 0; y < water_level; y++) {
+                if (worldY0 + y <= height) {
+                    blocks[x][y][z] = BlockType::Sand;
+                    // topDirtY = y;
+                }
+                else {
+                    blocks[x][y][z] = BlockType::Water;
+                }
+            }
             // Place grass block on top of the highest dirt block in this column
-            if (topDirtY >= 0) {
+            if (topDirtY >= water_level) {
                 blocks[x][topDirtY][z] = BlockType::Grass;
             }
         }
@@ -215,9 +239,14 @@ void Chunk::buildMesh()
     const float invTileU = 16.0f / float(256);
     const float invTileV = 16.0f / float(256);
 
-    std::vector<Vertex> vertices;
-    std::vector<uint32_t> indices;
-    uint32_t indexOffset = 0;
+    // Separate vertex/index arrays for opaque and transparent
+    std::vector<Vertex> opaqueVertices;
+    std::vector<uint32_t> opaqueIndices;
+    uint32_t opaqueIndexOffset = 0;
+
+    std::vector<Vertex> transparentVertices;
+    std::vector<uint32_t> transparentIndices;
+    uint32_t transparentIndexOffset = 0;
 
     for (int x = 0; x < SIZE; ++x) {
         for (int y = 0; y < SIZE; ++y) {
@@ -231,7 +260,20 @@ void Chunk::buildMesh()
                 for (int i = 0; i < 6; ++i) {
                     glm::ivec3 faceNormal = directions[i];
                     glm::ivec3 neighborBlockPos = currentBlockPos + faceNormal;
-                    if (!isAir(neighborBlockPos)) continue;
+
+                    bool currentTransparent = isTransparent(currentBlockPos);
+                    bool neighborTransparent = isTransparent(neighborBlockPos);
+
+                    // Don't cull faces between air and water
+                    if (!currentTransparent && !neighborTransparent) continue; // opaque-opaque
+                    if (currentTransparent && neighborTransparent &&
+                        getBlock(currentBlockPos) == getBlock(neighborBlockPos)) continue; // same transparent blocks
+
+
+                    // Face should be rendered if:
+                    // - current opaque and neighbor transparent (air or water)
+                    // - current transparent and neighbor opaque (or air)
+                    // - or neighbor is outside chunk bounds (treated transparent by your function)
 
                     Tile tile = (faceNormal.y == +1 ? tiles.top
                         : faceNormal.y == -1 ? tiles.bottom
@@ -253,6 +295,12 @@ void Chunk::buildMesh()
                         glm::vec3(position * SIZE) +
                         glm::vec3(currentBlockPos);
 
+                    bool isBlockTransparent = (blockType == BlockType::Water);
+
+                    auto& vertices = isBlockTransparent ? transparentVertices : opaqueVertices;
+                    auto& indices = isBlockTransparent ? transparentIndices : opaqueIndices;
+                    uint32_t& indexOffset = isBlockTransparent ? transparentIndexOffset : opaqueIndexOffset;
+
                     for (int v = 0; v < 4; ++v) {
                         vertices.push_back({
                             blockWorldOrigin + faceVertices[i][v],
@@ -271,54 +319,119 @@ void Chunk::buildMesh()
         }
     }
 
+    // Upload opaque mesh (same as before)
+    if (!opaqueVertices.empty()) {
+        glCreateVertexArrays(1, &opaqueVAO);
+        glCreateBuffers(1, &opaqueVBO);
+        glCreateBuffers(1, &opaqueEBO);
 
-    glCreateVertexArrays(1, &VAO);
-    glCreateBuffers(1, &VBO);
-    glCreateBuffers(1, &EBO);
+        glNamedBufferData(opaqueVBO,
+            opaqueVertices.size() * sizeof(Vertex),
+            opaqueVertices.data(),
+            GL_STATIC_DRAW);
 
-    glNamedBufferData(VBO,
-        vertices.size() * sizeof(Vertex),
-        vertices.data(),
-        GL_STATIC_DRAW);
+        glNamedBufferData(opaqueEBO,
+            opaqueIndices.size() * sizeof(uint32_t),
+            opaqueIndices.data(),
+            GL_STATIC_DRAW);
 
-    glNamedBufferData(EBO,
-        indices.size() * sizeof(uint32_t),
-        indices.data(),
-        GL_STATIC_DRAW);
+        glVertexArrayVertexBuffer(opaqueVAO, 0, opaqueVBO, 0, sizeof(Vertex));
 
-    glVertexArrayVertexBuffer(VAO, 0, VBO, 0, sizeof(Vertex));
+        glVertexArrayAttribFormat(opaqueVAO, 0, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, pos));
+        glVertexArrayAttribBinding(opaqueVAO, 0, 0);
+        glEnableVertexArrayAttrib(opaqueVAO, 0);
 
-    glVertexArrayAttribFormat(VAO, 0, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, pos));
-    glVertexArrayAttribBinding(VAO, 0, 0);
-    glEnableVertexArrayAttrib(VAO, 0);
+        glVertexArrayAttribFormat(opaqueVAO, 1, 2, GL_FLOAT, GL_FALSE, offsetof(Vertex, uv));
+        glVertexArrayAttribBinding(opaqueVAO, 1, 0);
+        glEnableVertexArrayAttrib(opaqueVAO, 1);
 
+        glVertexArrayAttribFormat(opaqueVAO, 2, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, normal));
+        glVertexArrayAttribBinding(opaqueVAO, 2, 0);
+        glEnableVertexArrayAttrib(opaqueVAO, 2);
 
-    glVertexArrayAttribFormat(VAO, 1, 2, GL_FLOAT, GL_FALSE, offsetof(Vertex, uv));
-    glVertexArrayAttribBinding(VAO, 1, 0);
-    glEnableVertexArrayAttrib(VAO, 1);
+        glVertexArrayElementBuffer(opaqueVAO, opaqueEBO);
 
-    glVertexArrayAttribFormat(VAO, 2, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, normal));
-    glVertexArrayAttribBinding(VAO, 2, 0);
-    glEnableVertexArrayAttrib(VAO, 2);
+        opaqueMesh = std::make_unique<MeshRenderable>(opaqueVAO, opaqueIndices.size());
+    } else {
+        opaqueMesh.reset();
+    }
 
-    glVertexArrayElementBuffer(VAO, EBO);
-    mesh = std::make_unique<MeshRenderable>(VAO, indices.size());
+    // Upload transparent mesh (same as before)
+    if (!transparentVertices.empty()) {
+        glCreateVertexArrays(1, &transparentVAO);
+        glCreateBuffers(1, &transparentVBO);
+        glCreateBuffers(1, &transparentEBO);
+
+        glNamedBufferData(transparentVBO,
+            transparentVertices.size() * sizeof(Vertex),
+            transparentVertices.data(),
+            GL_STATIC_DRAW);
+
+        glNamedBufferData(transparentEBO,
+            transparentIndices.size() * sizeof(uint32_t),
+            transparentIndices.data(),
+            GL_STATIC_DRAW);
+
+        glVertexArrayVertexBuffer(transparentVAO, 0, transparentVBO, 0, sizeof(Vertex));
+
+        glVertexArrayAttribFormat(transparentVAO, 0, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, pos));
+        glVertexArrayAttribBinding(transparentVAO, 0, 0);
+        glEnableVertexArrayAttrib(transparentVAO, 0);
+
+        glVertexArrayAttribFormat(transparentVAO, 1, 2, GL_FLOAT, GL_FALSE, offsetof(Vertex, uv));
+        glVertexArrayAttribBinding(transparentVAO, 1, 0);
+        glEnableVertexArrayAttrib(transparentVAO, 1);
+
+        glVertexArrayAttribFormat(transparentVAO, 2, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, normal));
+        glVertexArrayAttribBinding(transparentVAO, 2, 0);
+        glEnableVertexArrayAttrib(transparentVAO, 2);
+
+        glVertexArrayElementBuffer(transparentVAO, transparentEBO);
+
+        transparentMesh = std::make_unique<MeshRenderable>(transparentVAO, transparentIndices.size());
+    } else {
+        transparentMesh.reset();
+    }
 }
 
-void Chunk::render(const RenderContext& context) {
-    if (!ShaderManager::Get("worldShader")) {
-        std::cerr << "worldShader not loaded" << '\n';
-        return;
-    }
-    const auto shader = ShaderManager::Get("worldShader");
 
-    const BinderParams params = BinderParams(shader, glm::mat4(1.0f), context);
+
+void Chunk::renderOpaque(const RenderContext& context) const {
+    if (!opaqueMesh || !ShaderManager::Get("worldShader")) return;
+
+    auto shader = ShaderManager::Get("worldShader");
+    BinderParams params(shader, glm::mat4(1.0f), context);
+
     shader->use();
     shader->setInt("texture_diffuse", 0);
+    shader->setVec3("uCameraPos", context.cameraData.cameraPos);
+    shader->setVec3("uFogColor", glm::vec3(1.0f, 1.0f, 1.0f));
+    shader->setFloat("uFogStart", 50.0f);
+    shader->setFloat("uFogEnd", 100.0f);
+
     emissiveBinder->apply(params);
     atlas.bind(0);
-    mesh->draw(shader);
+    opaqueMesh->draw(shader);
 }
+
+void Chunk::renderTransparent(const RenderContext& context) const {
+    if (!transparentMesh || !ShaderManager::Get("worldShader")) return;
+
+    auto shader = ShaderManager::Get("worldShader");
+    BinderParams params(shader, glm::mat4(1.0f), context);
+
+    shader->use();
+    shader->setInt("texture_diffuse", 0);
+    shader->setVec3("uCameraPos", context.cameraData.cameraPos);
+    shader->setVec3("uFogColor", glm::vec3(1.0f, 1.0f, 1.0f));
+    shader->setFloat("uFogStart", 50.0f);
+    shader->setFloat("uFogEnd", 100.0f);
+
+    emissiveBinder->apply(params);
+    atlas.bind(0);
+    transparentMesh->draw(shader);
+}
+
 
 BlockType Chunk::getBlock(glm::ivec3 pos) const
 {

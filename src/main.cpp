@@ -61,6 +61,8 @@ int main()
     }
 
     glfwMakeContextCurrent(window);
+
+
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
@@ -78,7 +80,8 @@ int main()
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
     glFrontFace(GL_CCW);
-
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     // Load scene
     auto sceneManager = SceneManager(window);
     sceneManager.push(std::make_unique<MinecraftScene>(window));
