@@ -25,7 +25,8 @@ static const std::unordered_map<BlockType, BlockTiles> blockTileMap = {
     { BlockType::Dirt,   { {1,0}, {1,0}, {1,0} } },
     { BlockType::Grass,  { {0,0}, {1,0}, {2,0} } },
     { BlockType::Water,  { {3,0}, {3,0}, {3,0} } },
-    { BlockType::Sand,   { {0,11}, {0,11}, {0,11} }}
+    { BlockType::Sand,   { {0,11}, {0,11}, {0,11} }},
+    { BlockType::Stone,   { {4,0}, {4,0}, {4,0} }}
 };
 
 const glm::ivec3 faceNormals[6] = {
@@ -92,7 +93,8 @@ Chunk::Chunk(glm::ivec3 position) : position(position), atlas("terrain.png")
     if (!ShaderManager::Get("worldShader"))
         ShaderManager::Load("worldShader", "voxel/basic.vert", "voxel/basic.frag");
 
-
+    baseSeed = std::random_device{}();
+    mountainSeed = std::random_device{}();
     emissiveBinder = std::make_unique<EmissiveBinder>(glm::vec3(1.0f, 1.0f, 1.0f));
 }
 
@@ -111,45 +113,96 @@ Chunk::~Chunk() {
 
 
 void Chunk::generate() {
-    static FastNoiseLite noise;
+    static FastNoiseLite baseNoise;
+    static FastNoiseLite mountainNoise;
     static bool initialized = false;
+
     if (!initialized) {
-        noise.SetSeed(1337);
-        noise.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
-        noise.SetFrequency(0.01f);
+        // Base terrain: rolling hills
+        baseNoise.SetSeed(baseSeed);
+        baseNoise.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
+        baseNoise.SetFractalType(FastNoiseLite::FractalType_FBm);
+        baseNoise.SetFractalOctaves(5);
+        baseNoise.SetFractalLacunarity(2.0f);
+        baseNoise.SetFractalGain(0.5f);
+        baseNoise.SetRotationType3D(FastNoiseLite::RotationType3D_ImproveXZPlanes);
+
+        // Mountain ridges
+        mountainNoise.SetSeed(mountainSeed);
+        mountainNoise.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
+        mountainNoise.SetFractalType(FastNoiseLite::FractalType_Ridged);
+        mountainNoise.SetFractalOctaves(3);
+
         initialized = true;
     }
+
+    baseNoise.SetFrequency(gTerrainSettings.noiseFrequency);
+    mountainNoise.SetFrequency(gTerrainSettings.mountainFrequency);
+
     int worldX0 = position.x * SIZE;
-    int worldY0 = position.y * SIZE;
+    int worldY0 = 0;
     int worldZ0 = position.z * SIZE;
-    int water_level = 6;
+    int waterLevel = gTerrainSettings.waterLevel;
+
     for (int x = 0; x < SIZE; x++) {
         for (int z = 0; z < SIZE; z++) {
-            float n = noise.GetNoise(float(worldX0 + x), float(worldZ0 + z));
-            int height = int((n * 0.5f + 0.5f) * 32.0f);
+            float worldX = float(worldX0 + x);
+            float worldZ = float(worldZ0 + z);
 
-            int topDirtY = -1;
-            for (int y = 0; y < SIZE; y++) {
-                if (worldY0 + y <= height) {
-                    blocks[x][y][z] = BlockType::Dirt;
-                    topDirtY = y;
-                }
-                else {
-                    blocks[x][y][z] = BlockType::Air;
-                }
+            float baseHeight = baseNoise.GetNoise(worldX, worldZ);
+            baseHeight = baseHeight * 0.5f + 0.5f;
+
+            float mountainDetail = 0.0f;
+            if (baseHeight > 0.6f) {
+                float rawMountainNoise = mountainNoise.GetNoise(worldX, worldZ);
+                float ridged = 1.0f - std::abs(rawMountainNoise);
+                ridged = std::pow(ridged, 3.0f);
+                mountainDetail = ridged * (baseHeight - 0.6f) * 2.5f;
             }
-            for (int y = 0; y < water_level; y++) {
-                if (worldY0 + y <= height) {
-                    blocks[x][y][z] = BlockType::Sand;
-                    // topDirtY = y;
-                }
-                else {
+
+            float combinedHeight = baseHeight + mountainDetail;
+            if (combinedHeight > 1.5f) combinedHeight = 1.5f;
+
+            int maxTerrainHeight = gTerrainSettings.maxTerrainHeight;
+            int height = int(combinedHeight * maxTerrainHeight);
+
+            for (int y = 0; y < 128; y++) {
+                int worldY = worldY0 + y;
+
+                if (worldY > height && worldY <= waterLevel) {
                     blocks[x][y][z] = BlockType::Water;
                 }
-            }
-            // Place grass block on top of the highest dirt block in this column
-            if (topDirtY >= water_level) {
-                blocks[x][topDirtY][z] = BlockType::Grass;
+                else if (worldY > height) {
+                    blocks[x][y][z] = BlockType::Air;
+                }
+                else {
+                    bool isMountain = (height >= 50);
+                    bool nearWater = (height >= waterLevel - 1) && (height <= waterLevel + 1);
+
+                    if (worldY == height) {
+                        if (isMountain)
+                            blocks[x][y][z] = BlockType::Stone;
+                        else if (nearWater)
+                            blocks[x][y][z] = BlockType::Sand;
+                        else if (height > waterLevel + 1)
+                            blocks[x][y][z] = BlockType::Grass;
+                        else
+                            blocks[x][y][z] = BlockType::Sand;
+                    }
+                    else if (worldY >= height - 4) {
+                        if (isMountain)
+                            blocks[x][y][z] = BlockType::Stone;
+                        else if (nearWater)
+                            blocks[x][y][z] = BlockType::Sand;
+                        else if (height > waterLevel + 1)
+                            blocks[x][y][z] = BlockType::Dirt;
+                        else
+                            blocks[x][y][z] = BlockType::Sand;
+                    }
+                    else {
+                        blocks[x][y][z] = BlockType::Stone;
+                    }
+                }
             }
         }
     }
@@ -249,7 +302,7 @@ void Chunk::buildMesh()
     uint32_t transparentIndexOffset = 0;
 
     for (int x = 0; x < SIZE; ++x) {
-        for (int y = 0; y < SIZE; ++y) {
+        for (int y = 0; y < 128; ++y) {
             for (int z = 0; z < SIZE; ++z) {
                 glm::ivec3 currentBlockPos(x, y, z);
                 BlockType blockType = getBlock(currentBlockPos);
@@ -406,8 +459,8 @@ void Chunk::renderOpaque(const RenderContext& context) const {
     shader->setInt("texture_diffuse", 0);
     shader->setVec3("uCameraPos", context.cameraData.cameraPos);
     shader->setVec3("uFogColor", glm::vec3(1.0f, 1.0f, 1.0f));
-    shader->setFloat("uFogStart", 50.0f);
-    shader->setFloat("uFogEnd", 100.0f);
+    shader->setFloat("uFogStart", 100.0f);
+    shader->setFloat("uFogEnd", 160.0f);
 
     emissiveBinder->apply(params);
     atlas.bind(0);
@@ -424,8 +477,8 @@ void Chunk::renderTransparent(const RenderContext& context) const {
     shader->setInt("texture_diffuse", 0);
     shader->setVec3("uCameraPos", context.cameraData.cameraPos);
     shader->setVec3("uFogColor", glm::vec3(1.0f, 1.0f, 1.0f));
-    shader->setFloat("uFogStart", 50.0f);
-    shader->setFloat("uFogEnd", 100.0f);
+    shader->setFloat("uFogStart", 100.0f);
+    shader->setFloat("uFogEnd", 160.0f);
 
     emissiveBinder->apply(params);
     atlas.bind(0);
@@ -435,7 +488,7 @@ void Chunk::renderTransparent(const RenderContext& context) const {
 
 BlockType Chunk::getBlock(glm::ivec3 pos) const
 {
-    if (pos.x < 0 || pos.x >= SIZE || pos.y < 0 || pos.y >= SIZE || pos.z < 0 || pos.z >= SIZE)
+    if (pos.x < 0 || pos.x >= SIZE || pos.y < 0 || pos.y >= 128 || pos.z < 0 || pos.z >= SIZE)
         return BlockType::Air;
     return blocks[pos.x][pos.y][pos.z];
 }
@@ -446,7 +499,7 @@ const glm::ivec3& Chunk::getPosition() const
 }
 
 int Chunk::getTopBlockY(int x, int z) const {
-    for (int y = SIZE - 1; y >= 0; y--) {
+    for (int y = 128 - 1; y >= 0; y--) {
         if (blocks[x][y][z] != BlockType::Air) {
             return y;
         }

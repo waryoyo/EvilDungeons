@@ -115,7 +115,7 @@ int main()
     }
 
     // ---------- GAME LOOP ----------
-    while (!glfwWindowShouldClose(window)) {
+     while (!glfwWindowShouldClose(window)) {
 
         frameCount++;
         auto currentTime = std::chrono::high_resolution_clock::now();

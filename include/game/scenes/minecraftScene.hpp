@@ -20,7 +20,7 @@
 #include <engine/core/systems/renderSystem.hpp>
 #include <engine/core/systems/collisionSystem.hpp>
 #include <engine/graphics/managers/shaderManager.hpp>
-
+#include <game/utils/terrainSettings.hpp>
 #include <game/world/world.hpp>
 
 class MinecraftScene : public Scene {
@@ -42,7 +42,6 @@ private:
     void renderPauseMenu();
     void renderStartMenu();
     bool showPauseMenu = false;
-    
     // Collision and movement
     bool isColliding(const glm::vec3& position);
     float calculateGroundDistance(const glm::vec3& position);
@@ -95,6 +94,7 @@ private:
     float jumpSpeed = 5.0f;
 
     bool isUnderWater = false;
+    bool isHeadUnderWater = false;
     // Window dimensions
     int screenWidth = 1280;
     int screenHeight = 720;

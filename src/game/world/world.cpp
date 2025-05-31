@@ -3,8 +3,19 @@
 #include <unordered_set>
 
 void World::generate() {
-    loadChunk({ 0,0,0 });
+    int rangeX = HORIZONTAL_RADIUS-1;
+    int rangeY = 0;  // e.g., only generate ground level chunks or modify as needed
+    int rangeZ = HORIZONTAL_RADIUS-1;
+
+    for (int x = -rangeX; x <= rangeX; ++x) {
+        for (int y = 0; y <= rangeY; ++y) {
+            for (int z = -rangeZ; z <= rangeZ; ++z) {
+                loadChunk({x, y, z});
+            }
+        }
+    }
 }
+
 
 void World::render(const RenderContext& context) const {
     // Render opaque blocks first
@@ -35,13 +46,13 @@ void World::render(const RenderContext& context) const {
 BlockType World::getBlock(int x, int y, int z) const {
     // Convert world coordinates to chunk and local block coordinates
     int chunkX = x >= 0 ? x / CHUNK_SIZE : ((x + 1) / CHUNK_SIZE) - 1;
-    int chunkY = y >= 0 ? y / CHUNK_SIZE : ((y + 1) / CHUNK_SIZE) - 1;
+    int chunkY = y >= 0 ? y / 128 : ((y + 1) / 128) - 1;
     int chunkZ = z >= 0 ? z / CHUNK_SIZE : ((z + 1) / CHUNK_SIZE) - 1;
     glm::ivec3 chunkPos(chunkX, chunkY, chunkZ);
     auto it = chunks.find(chunkPos);
     if (it == chunks.end()) return BlockType::Air;
     int localX = x - chunkX * CHUNK_SIZE;
-    int localY = y - chunkY * CHUNK_SIZE;
+    int localY = y - chunkY * 128;
     int localZ = z - chunkZ * CHUNK_SIZE;
     return it->second->getBlock({localX, localY, localZ});
 }

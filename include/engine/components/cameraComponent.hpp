@@ -21,7 +21,7 @@ public:
         float fov = 45.0f,
         float aspect = 1280.0f / 720.0f,
         float near = 0.1f,
-        float far = 150.0f,
+        float far = 250.0f,
         float sensitivity = 0.1f
     );
 

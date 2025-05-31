@@ -68,7 +68,7 @@ MinecraftScene::MinecraftScene(GLFWwindow* window)
 
     auto camGO = std::make_unique<GameObject>("MainCamera", this);
     camGO->addComponent(std::make_unique<CameraComponent>(camGO.get(), window, input.get()));
-    camGO->getComponent<CameraComponent>()->setPosition({ 0.0f, 50.0f, 3.0f });
+    camGO->getComponent<CameraComponent>()->setPosition({ 0.0f, 70.0f, 3.0f });
     objects.push_back(std::move(camGO));
     world.ensureChunksNear({ 0.0f, 20.0f, 3.0f });
 
@@ -103,10 +103,14 @@ MinecraftScene::MinecraftScene(GLFWwindow* window)
     glEnableVertexArrayAttrib(skyboxVAO, 0);
 
     cubemapTexture = loadCubemap();
-
+        
 
     if (!ShaderManager::Get("skyShader"))
         ShaderManager::Load("skyShader", "sky/basic.vert", "sky/basic.frag");
+
+    if (!ShaderManager::Get("worldShader"))
+        ShaderManager::Load("worldShader", "voxel/basic.vert", "voxel/basic.frag");
+
     }
 
 MinecraftScene::~MinecraftScene()
@@ -151,111 +155,149 @@ void MinecraftScene::update(float dt)
     }}
 
     if (!isPaused){
-    float speed = 5.0f * dt;
+        float speed = 5.0f * dt;
 
-    const auto& camera = objects[0]->getComponent<CameraComponent>(); // ONLY DOING THIS HERE WILL NEVER DO THIS, this is just for testing
-    glm::vec3 pos = camera->getPosition();
-    glm::vec3 front = camera->getFront();
-    glm::vec3 up = camera->getUp();
-    glm::vec3 cameraRight = glm::normalize(glm::cross(up, front));
-    // if (world.getBlock(floor(pos.x), floor(pos.y), floor(pos.z)) == BlockType::Water) {
-    //     isUnderWater = true;
-    // } else {
-    //     isUnderWater = false;
-    // }
-    glm::vec3 cameraDelta = glm::vec3(0.0f);
+        const auto& camera = objects[0]->getComponent<CameraComponent>();
+        glm::vec3 pos = camera->getPosition();
+        glm::vec3 lowerBodyPos = pos - glm::vec3(0.0f, cameraHeight/2, 0.0f);
+        glm::vec3 feetPos = pos - glm::vec3(0.0f, cameraHeight, 0.0f);
 
-    glm::vec3 frontHorizontal = glm::normalize(glm::vec3(front.x, 0.0f, front.z));
+        glm::vec3 front = camera->getFront();
+        glm::vec3 up = camera->getUp();
+        glm::vec3 right = glm::normalize(glm::cross(up, front));
 
-    glm::vec3 rightHorizontal = glm::normalize(glm::vec3(cameraRight.x, 0.0f, cameraRight.z));
+        glm::vec3 frontHorizontal = glm::normalize(glm::vec3(front.x, 0.0f, front.z));
+        glm::vec3 rightHorizontal = glm::normalize(glm::vec3(right.x, 0.0f, right.z));
 
-    if (input->isKeyDown(GLFW_KEY_LEFT_CONTROL)) {
-        speed *= 2.0f;
-    }
-    // if (input->isKeyDown(GLFW_KEY_LEFT_SHIFT)) {
-    //     cameraDelta -= speed * up;
-    // }
-    if (input->isKeyDown(GLFW_KEY_W)) {
-        cameraDelta += speed * frontHorizontal;
-    }
-    if (input->isKeyDown(GLFW_KEY_S)) {
-        cameraDelta -= speed * frontHorizontal;
-    }
-    if (input->isKeyDown(GLFW_KEY_A)) {
-        cameraDelta += speed * rightHorizontal;
-    }
-    if (input->isKeyDown(GLFW_KEY_D)) {
-        cameraDelta -= speed * rightHorizontal;
-    }
-    // Jump: Only when grounded and not underwater
-    if (input->wasKeyPressed(GLFW_KEY_SPACE) && isOnGround && !isUnderWater) {
-        velocity.y = jumpSpeed;
-        isOnGround = false;
-    }
+        glm::vec3 cameraDelta = glm::vec3(0.0f);
 
-    // Underwater movement: float upward when holding space
-    if (isUnderWater) {
-        gravity = -2.0f; // gentle downward force to simulate buoyancy
-
-        if (input->isKeyDown(GLFW_KEY_SPACE)) {
-            cameraDelta += speed * up; // reduced speed for upward movement
+        if (input->isKeyDown(GLFW_KEY_LEFT_CONTROL)) {
+            speed *= 2.0f;
         }
 
-        if (input->isKeyDown(GLFW_KEY_LEFT_SHIFT)) {
-            cameraDelta -= speed * up * 0.5f; // swim down
-        }
-    } else {
-        gravity = -10.8f; // reset to normal gravity when not underwater
-    }
+        if (input->isKeyDown(GLFW_KEY_W)) cameraDelta += speed * frontHorizontal;
+        if (input->isKeyDown(GLFW_KEY_S)) cameraDelta -= speed * frontHorizontal;
+        if (input->isKeyDown(GLFW_KEY_A)) cameraDelta += speed * rightHorizontal;
+        if (input->isKeyDown(GLFW_KEY_D)) cameraDelta -= speed * rightHorizontal;
+
+        BlockType lowerBodyBlock = world.getBlock(
+            static_cast<int>(std::floor(lowerBodyPos.x)),
+            static_cast<int>(std::floor(lowerBodyPos.y)),
+            static_cast<int>(std::floor(lowerBodyPos.z))
+        );
 
 
-    velocity.y += gravity * dt;
+        BlockType feetBlock = world.getBlock(
+            static_cast<int>(std::floor(feetPos.x)),
+            static_cast<int>(std::floor(feetPos.y)),
+            static_cast<int>(std::floor(feetPos.z))
+        );
 
-    // Add vertical velocity to movement delta (vertical movement)
-    cameraDelta.y += velocity.y * dt;
+        BlockType eyeBodyBlock = world.getBlock(
+            static_cast<int>(std::floor(pos.x)),
+            static_cast<int>(std::floor(pos.y)),
+            static_cast<int>(std::floor(pos.z))
+        );
 
-    bool inputMoving = input->isKeyDown(GLFW_KEY_W) || input->isKeyDown(GLFW_KEY_A) ||
-                    input->isKeyDown(GLFW_KEY_S) || input->isKeyDown(GLFW_KEY_D);
-    if (inputMoving and isOnGround){
-        isMoving = true;
-    }else{
-        isMoving = false;
-    }
+        bool isLowerBodyUnderWater = (lowerBodyBlock == BlockType::Water);
+        bool isFeetUnderWater = (feetBlock == BlockType::Water);
+        isHeadUnderWater = (eyeBodyBlock == BlockType::Water);
 
-    glm::vec3 newPos = pos + cameraDelta;
-    world.ensureChunksNear(newPos);
+        isUnderWater = isLowerBodyUnderWater;
 
-    const glm::vec3 cameraHalfExtents(0.3f, 0.9f, 0.3f);
-    auto isColliding = [&](const glm::vec3& testPos) -> bool {
-
-        glm::ivec3 minBlock = glm::floor(testPos - cameraHalfExtents);
-        glm::ivec3 maxBlock = glm::floor(testPos + cameraHalfExtents);
-
-        for (int x = minBlock.x; x <= maxBlock.x; x++) {
-            for (int y = minBlock.y; y <= maxBlock.y; y++) {
-                for (int z = minBlock.z; z <= maxBlock.z; z++) {
-                    if (world.getBlock(x, y, z) != BlockType::Air) {
-                        if (world.getBlock(x, y, z) == BlockType::Water){
-                            isUnderWater = true;
-                        } else {
-                            isUnderWater = false;
-                        // Block is solid, check AABB overlap
-                        glm::vec3 blockMin(x, y, z);
-                        glm::vec3 blockMax = blockMin + glm::vec3(1.0f);
-                        glm::vec3 camMin = testPos - cameraHalfExtents;
-                        glm::vec3 camMax = testPos + cameraHalfExtents;
-
-                        bool overlap = (camMin.x < blockMax.x && camMax.x > blockMin.x) &&
-                                       (camMin.y < blockMax.y && camMax.y > blockMin.y) &&
-                                       (camMin.z < blockMax.z && camMax.z > blockMin.z);
-                                       
-                        if (overlap) return true;
-                    }   }
-                }
+        if (input->wasKeyPressed(GLFW_KEY_SPACE)) {
+            if (isOnGround && !isFeetUnderWater) {
+                velocity.y = jumpSpeed;
+                isOnGround = false;
+            } else if (!isHeadUnderWater && isFeetUnderWater) {
+                velocity.y = jumpSpeed * 1.1f;
+                isOnGround = false;
             }
         }
-        return false;
-    };
+
+
+        // Water physics
+        if (isUnderWater) {
+            gravity = -2.0f; // gentle sink
+
+            if (input->isKeyDown(GLFW_KEY_SPACE)) {
+                velocity.y += 5.0f * dt;
+            }
+            if (input->isKeyDown(GLFW_KEY_LEFT_SHIFT)) {
+                velocity.y -= 5.0f * dt;
+            }
+
+            velocity.y = std::clamp(velocity.y, -3.0f, 3.0f); // clamp to prevent extreme speeds
+        } else {
+            gravity = -10.8f;
+        }
+
+        velocity.y += gravity * dt;
+        cameraDelta.y += velocity.y * dt;
+
+        bool inputMoving = input->isKeyDown(GLFW_KEY_W) || input->isKeyDown(GLFW_KEY_A) ||
+                        input->isKeyDown(GLFW_KEY_S) || input->isKeyDown(GLFW_KEY_D);
+        isMoving = (inputMoving && isOnGround);
+
+        // Predict new position
+        glm::vec3 newPos = pos + cameraDelta;
+        world.ensureChunksNear(newPos);
+
+        // Collision handling
+        const glm::vec3 cameraHalfExtents(0.3f, 0.9f, 0.3f);
+
+        auto isColliding = [&](const glm::vec3& testPos) -> bool {
+            glm::ivec3 minBlock = glm::floor(testPos - cameraHalfExtents);
+            glm::ivec3 maxBlock = glm::floor(testPos + cameraHalfExtents);
+
+            for (int x = minBlock.x; x <= maxBlock.x; x++) {
+                for (int y = minBlock.y; y <= maxBlock.y; y++) {
+                    for (int z = minBlock.z; z <= maxBlock.z; z++) {
+                        BlockType block = world.getBlock(x, y, z);
+                        if (block != BlockType::Air && block != BlockType::Water) {
+                            glm::vec3 blockMin(x, y, z);
+                            glm::vec3 blockMax = blockMin + glm::vec3(1.0f);
+                            glm::vec3 camMin = testPos - cameraHalfExtents;
+                            glm::vec3 camMax = testPos + cameraHalfExtents;
+
+                            bool overlap = (camMin.x < blockMax.x && camMax.x > blockMin.x) &&
+                                        (camMin.y < blockMax.y && camMax.y > blockMin.y) &&
+                                        (camMin.z < blockMax.z && camMax.z > blockMin.z);
+
+                            if (overlap) return true;
+                        }
+                    }
+                }
+            }
+            return false;
+        };
+
+        // Simple axis separation for collision resolution
+        glm::vec3 finalPos = pos;
+
+        // X
+        glm::vec3 tryX = finalPos + glm::vec3(cameraDelta.x, 0.0f, 0.0f);
+        if (!isColliding(tryX)) finalPos.x = tryX.x;
+
+        // Y
+        glm::vec3 tryY = finalPos + glm::vec3(0.0f, cameraDelta.y, 0.0f);
+        if (!isColliding(tryY)) {
+            finalPos.y = tryY.y;
+        } else {
+            if (velocity.y < 0.0f) {
+                isOnGround = true;
+            }
+            velocity.y = 0.0f;
+        }
+
+        // Z
+        glm::vec3 tryZ = finalPos + glm::vec3(0.0f, 0.0f, cameraDelta.z);
+        if (!isColliding(tryZ)) finalPos.z = tryZ.z;
+
+        // Apply movement
+        camera->setPosition(finalPos);
+
+
 
     glm::vec3 basePos = pos - glm::vec3(0.0f, camera->getPlayerEyeHeight(), 0.0f) - prevBobOffsetVec;
     glm::vec3 attempt = basePos + cameraDelta;
@@ -325,22 +367,29 @@ void MinecraftScene::render()
     // }
     // glEnable(GL_BLEND);
     // glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    if (!ShaderManager::Get("worldShader")) {
+        std::cerr << "worldShader not loaded" << '\n';
+        return;
+    }
+    const auto shader = ShaderManager::Get("worldShader");
+    shader->use();
+    shader->setBool("uIsUnderwater", isHeadUnderWater);
 
     for (const auto& object : objects)
         object->render(context);
 
-    if (isPaused) {
-        renderPauseMenu();
-    }
+
     if (isFirstTime) {
         renderStartMenu();
+    }else if (isPaused) {
+        renderPauseMenu();
     }
 
 }
 
 void MinecraftScene::renderPauseMenu() {
     if (!isPaused or isFirstTime) return;
-
+    
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
@@ -361,7 +410,7 @@ void MinecraftScene::renderPauseMenu() {
     }
 
     ImGui::SetNextWindowPos(viewport->GetCenter(), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
-    ImGui::SetNextWindowSize(ImVec2(600, 400));
+    ImGui::SetNextWindowSize(ImVec2(800, 600));
     ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[1]);  // assuming Fonts[1] is bigger; load a bigger font before
 
     if (ImGui::Begin("Pause Menu", nullptr,
@@ -388,6 +437,19 @@ void MinecraftScene::renderPauseMenu() {
 
         if (ImGui::Button("Exit", ImVec2(-FLT_MIN, 0))) {
             glfwSetWindowShouldClose(window, GLFW_TRUE);
+        } 
+        
+        ImGui::SliderFloat("Base Noise Frequency", &gTerrainSettings.noiseFrequency, 0.0001f, 0.1f, "%.5f", ImGuiSliderFlags_Logarithmic);
+        ImGui::SliderFloat("Mountain Noise Frequency", &gTerrainSettings.mountainFrequency, 0.0005f, 0.1f, "%.5f", ImGuiSliderFlags_Logarithmic);
+        ImGui::SliderInt("Max Terrain Height", &gTerrainSettings.maxTerrainHeight, 16, 256);
+        ImGui::SliderInt("Water Level", &gTerrainSettings.waterLevel, 0, 128);
+
+
+        if (ImGui::Button("Regenerate World", ImVec2(-FLT_MIN, 0))) {
+            world.generate(); // or your own method to regenerate terrain
+            if (auto camera = objects[0]->getComponent<CameraComponent>()) {
+                camera->setPosition(glm::vec3(0.0f, 70.0f, 3.0f));
+            }
         }
 
         ImGui::PopFont();  // pop the Minecraft font here

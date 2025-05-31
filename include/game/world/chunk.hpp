@@ -6,7 +6,9 @@
 #include <engine/graphics/meshFactory.hpp>
 #include <engine/graphics/texture.hpp>
 #include <game/utils/types.hpp>
+#include <game/utils/terrainSettings.hpp>
 #include <memory>
+#include <random> 
 
 static constexpr int SIZE = 32;
 static constexpr int block = 16;
@@ -34,7 +36,7 @@ public:
 
 private:
     glm::ivec3 position;
-    BlockType blocks[SIZE][SIZE][SIZE] = { BlockType::Air };
+    BlockType blocks[SIZE][128][SIZE] = { BlockType::Air };
     std::unique_ptr<IRenderable> mesh;
     std::unique_ptr<IRenderable> opaqueMesh;
     std::unique_ptr<IRenderable> transparentMesh;
@@ -56,6 +58,8 @@ private:
     bool isAir(glm::ivec3 pos) const;
     bool isTransparent(glm::ivec3 pos) const;
 
+    int baseSeed;
+    int mountainSeed;
     // Add these for opaque mesh
     GLuint opaqueVAO = 0;
     GLuint opaqueVBO = 0;
