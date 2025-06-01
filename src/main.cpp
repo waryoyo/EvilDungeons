@@ -158,3 +158,5 @@ int main()
 void renderSky() {
     // Empty placeholder
 }
+
+

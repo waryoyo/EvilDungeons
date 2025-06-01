@@ -39,6 +39,11 @@ void Shader::use() const
 	glUseProgram(ID);
 }
 
+void Shader::setVec2(const std::string &name, const glm::vec2 &value) const {
+    glUniform2fv(glGetUniformLocation(ID, name.c_str()), 1, &value[0]);
+}
+
+
 void Shader::setVec3(const std::string& name, const glm::vec3& value) const
 {
 	//testsss
@@ -66,6 +71,9 @@ void Shader::setFloat(const std::string& name, GLfloat value) const
 	glUniform1f(glGetUniformLocation(ID, name.c_str()), value);
 }
 
+unsigned int Shader::getID() const {
+    return ID;
+}
 
 std::string Shader::loadFile(const std::string& path)
 {

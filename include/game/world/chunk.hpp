@@ -21,9 +21,11 @@ public:
     void generate();
     void buildMesh();
 
-    void renderOpaque(const RenderContext& context) const;
-    void renderTransparent(const RenderContext& context) const;
+    void renderOpaque(const RenderContext& context) ;
+    void renderTransparent(const RenderContext& context) ;
     BlockType getBlock(glm::ivec3 pos) const;
+    void setBlock(const glm::ivec3& pos, BlockType type);
+
     const glm::ivec3& getPosition() const;
 
     // Returns the highest non-air block y for a given x,z column, or -1 if all air
@@ -37,6 +39,7 @@ public:
 private:
     glm::ivec3 position;
     BlockType blocks[SIZE][128][SIZE] = { BlockType::Air };
+    bool needsMeshUpdate = false;
     std::unique_ptr<IRenderable> mesh;
     std::unique_ptr<IRenderable> opaqueMesh;
     std::unique_ptr<IRenderable> transparentMesh;

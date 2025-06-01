@@ -20,6 +20,8 @@ public:
 	std::unordered_map<glm::ivec3, std::unique_ptr<Chunk>, Vec3Hash> chunks;
 
 	BlockType getBlock(int x, int y, int z) const;
+	void setBlock(int x, int y, int z, BlockType type) const;
+
 	void ensureChunksNear(const glm::vec3& playerPos);
 
 	void generate();

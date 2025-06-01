@@ -57,6 +57,20 @@ BlockType World::getBlock(int x, int y, int z) const {
     return it->second->getBlock({localX, localY, localZ});
 }
 
+void World::setBlock(int x, int y, int z, BlockType type) const {
+    // Convert world coordinates to chunk and local block coordinates
+    int chunkX = x >= 0 ? x / CHUNK_SIZE : ((x + 1) / CHUNK_SIZE) - 1;
+    int chunkY = y >= 0 ? y / 128 : ((y + 1) / 128) - 1;
+    int chunkZ = z >= 0 ? z / CHUNK_SIZE : ((z + 1) / CHUNK_SIZE) - 1;
+    glm::ivec3 chunkPos(chunkX, chunkY, chunkZ);
+    auto it = chunks.find(chunkPos);
+    if (it == chunks.end()) return;
+    int localX = x - chunkX * CHUNK_SIZE;
+    int localY = y - chunkY * 128;
+    int localZ = z - chunkZ * CHUNK_SIZE;
+    return it->second->setBlock({localX, localY, localZ}, type);
+}
+
 void World::ensureChunksNear(const glm::vec3& playerPos) {
     glm::ivec3 center = {
         static_cast<int>(floor(playerPos.x / CHUNK_SIZE)),

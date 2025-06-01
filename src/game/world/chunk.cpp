@@ -449,7 +449,12 @@ void Chunk::buildMesh()
 
 
 
-void Chunk::renderOpaque(const RenderContext& context) const {
+void Chunk::renderOpaque(const RenderContext& context) {
+    if (needsMeshUpdate) {
+        buildMesh();
+        needsMeshUpdate = false;
+    }
+
     if (!opaqueMesh || !ShaderManager::Get("worldShader")) return;
 
     auto shader = ShaderManager::Get("worldShader");
@@ -467,7 +472,13 @@ void Chunk::renderOpaque(const RenderContext& context) const {
     opaqueMesh->draw(shader);
 }
 
-void Chunk::renderTransparent(const RenderContext& context) const {
+
+void Chunk::renderTransparent(const RenderContext& context) {
+    if (needsMeshUpdate) {
+        buildMesh();
+        needsMeshUpdate = false;
+    }
+
     if (!transparentMesh || !ShaderManager::Get("worldShader")) return;
 
     auto shader = ShaderManager::Get("worldShader");
@@ -486,12 +497,24 @@ void Chunk::renderTransparent(const RenderContext& context) const {
 }
 
 
+
 BlockType Chunk::getBlock(glm::ivec3 pos) const
 {
     if (pos.x < 0 || pos.x >= SIZE || pos.y < 0 || pos.y >= 128 || pos.z < 0 || pos.z >= SIZE)
         return BlockType::Air;
     return blocks[pos.x][pos.y][pos.z];
 }
+
+void Chunk::setBlock(const glm::ivec3& pos, BlockType type) {
+    if (pos.x < 0 || pos.x >= SIZE || pos.y < 0 || pos.y >= 128 || pos.z < 0 || pos.z >= SIZE)
+        return;
+
+    blocks[pos.x][pos.y][pos.z] = type;
+
+    // Optional: mark chunk as dirty so it can rebuild its mesh
+    needsMeshUpdate = true;
+}
+
 
 const glm::ivec3& Chunk::getPosition() const
 {

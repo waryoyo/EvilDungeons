@@ -72,6 +72,11 @@ MinecraftScene::MinecraftScene(GLFWwindow* window)
     objects.push_back(std::move(camGO));
     world.ensureChunksNear({ 0.0f, 20.0f, 3.0f });
 
+    if (!ShaderManager::Get("crosshair"))
+        ShaderManager::Load("crosshair", "crosshair/crosshair.vert", "crosshair/crosshair.frag");
+    Shader* crosshairShader = ShaderManager::Get("crosshair"); // or however you manage shaders
+    crosshairRenderer = new CrosshairRenderer("assets/textures/crosshair.png", crosshairShader);
+
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO(); (void)io;
@@ -103,7 +108,16 @@ MinecraftScene::MinecraftScene(GLFWwindow* window)
     glEnableVertexArrayAttrib(skyboxVAO, 0);
 
     cubemapTexture = loadCubemap();
-        
+    availableBlocks = {
+        BlockType::Dirt,
+        BlockType::Grass,
+        BlockType::Stone,
+        BlockType::Sand
+    };
+    selectedBlockIndex = 0;
+    selectedBlock = availableBlocks[selectedBlockIndex];
+
+
 
     if (!ShaderManager::Get("skyShader"))
         ShaderManager::Load("skyShader", "sky/basic.vert", "sky/basic.frag");
@@ -136,6 +150,40 @@ bool intersectAABB(const glm::vec3& amin, const glm::vec3& amax,
         (amin.y <= bmax.y && amax.y >= bmin.y) &&
         (amin.z <= bmax.z && amax.z >= bmin.z);
 }
+
+bool MinecraftScene::raycastShoot(float maxDistance, glm::ivec3& hitBlockPos, glm::ivec3& hitNormal) {
+    
+    const auto& camera = objects[0]->getComponent<CameraComponent>();
+    glm::vec3 origin = camera->getPosition();
+    glm::vec3 direction = glm::normalize(camera->getFront());
+
+    const float stepSize = 0.1f;
+    float distanceTraveled = 0.0f;
+
+    glm::vec3 currentPos = origin;
+
+    while (distanceTraveled < maxDistance) {
+        glm::ivec3 blockPos = glm::floor(currentPos);
+        BlockType block = world.getBlock(blockPos.x, blockPos.y, blockPos.z);
+
+        if (block != BlockType::Air && block != BlockType::Water) {
+            hitBlockPos = blockPos;
+
+            // Estimate the normal by checking which axis had the largest step
+            glm::vec3 prevPos = currentPos - direction * stepSize;
+            glm::ivec3 prevBlock = glm::floor(prevPos);
+            hitNormal = glm::clamp(blockPos - prevBlock, -1, 1);
+
+            return true;
+        }
+
+        currentPos += direction * stepSize;
+        distanceTraveled += stepSize;
+    }
+
+    return false;
+}
+
 
 void MinecraftScene::update(float dt)
 {
@@ -179,6 +227,36 @@ void MinecraftScene::update(float dt)
         if (input->isKeyDown(GLFW_KEY_S)) cameraDelta -= speed * frontHorizontal;
         if (input->isKeyDown(GLFW_KEY_A)) cameraDelta += speed * rightHorizontal;
         if (input->isKeyDown(GLFW_KEY_D)) cameraDelta -= speed * rightHorizontal;
+
+        if (input->wasKeyPressed(GLFW_KEY_1)) {
+            selectedBlockIndex = 0;
+        }
+        if (input->wasKeyPressed(GLFW_KEY_2)) {
+            selectedBlockIndex = 1;
+        }
+        if (input->wasKeyPressed(GLFW_KEY_3)) {
+            selectedBlockIndex = 2;
+        }
+        if (input->wasKeyPressed(GLFW_KEY_4)) {
+            selectedBlockIndex = 3;
+        }
+        selectedBlock = availableBlocks[selectedBlockIndex];
+        if (input->wasMouseButtonPressed(GLFW_MOUSE_BUTTON_RIGHT)) {
+            glm::ivec3 hitBlock, hitNormal;
+            if (raycastShoot(6.0f, hitBlock, hitNormal)) {
+                // Example: remove the block
+                world.setBlock(hitBlock.x, hitBlock.y, hitBlock.z, BlockType::Air);
+            }
+        }
+
+        if (input->wasMouseButtonPressed(GLFW_MOUSE_BUTTON_LEFT)) {
+            glm::ivec3 hitBlock, hitNormal;
+            if (raycastShoot(6.0f, hitBlock, hitNormal)) {
+                glm::ivec3 placePos = hitBlock + hitNormal * glm::ivec3(-1);
+                world.setBlock(placePos.x, placePos.y, placePos.z, selectedBlock);
+            }
+        }
+
 
         BlockType lowerBodyBlock = world.getBlock(
             static_cast<int>(std::floor(lowerBodyPos.x)),
@@ -378,22 +456,46 @@ void MinecraftScene::render()
     for (const auto& object : objects)
         object->render(context);
 
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
+
+
+    ImGui::Begin("Selected Block");
+    std::stringstream ss;
+    ss << selectedBlock;
+    ImGui::Text("Selected Block: %s", ss.str().c_str());   
+    ImGui::End();
+
+
 
     if (isFirstTime) {
         renderStartMenu();
     }else if (isPaused) {
         renderPauseMenu();
     }
+    // Render ImGui
+    ImGui::Render();
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+    if (!isFirstTime && !isPaused) {
+        if (crosshairRenderer) {
+        glDisable(GL_DEPTH_TEST);
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+        crosshairRenderer->render(screenWidth, screenHeight);
+
+        glEnable(GL_DEPTH_TEST);
+        glDisable(GL_BLEND);
+        }
+    }
+
 
 }
 
 void MinecraftScene::renderPauseMenu() {
     if (!isPaused or isFirstTime) return;
     
-    ImGui_ImplOpenGL3_NewFrame();
-    ImGui_ImplGlfw_NewFrame();
-    ImGui::NewFrame();
-
     ImGuiViewport* viewport = ImGui::GetMainViewport();
     ImGui::SetNextWindowPos(viewport->Pos);
     ImGui::SetNextWindowSize(viewport->Size);
@@ -460,16 +562,10 @@ void MinecraftScene::renderPauseMenu() {
     ImGui::PopStyleVar();
     ImGui::PopStyleColor();
 
-    ImGui::Render();
-    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
 void MinecraftScene::renderStartMenu() {
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-
-    ImGui_ImplOpenGL3_NewFrame();
-    ImGui_ImplGlfw_NewFrame();
-    ImGui::NewFrame();
 
     ImGuiViewport* viewport = ImGui::GetMainViewport();
     ImGui::SetNextWindowPos(viewport->Pos);
@@ -525,8 +621,6 @@ void MinecraftScene::renderStartMenu() {
     ImGui::PopStyleVar();
     ImGui::PopStyleColor();
 
-    ImGui::Render();
-    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
 

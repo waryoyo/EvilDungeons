@@ -20,8 +20,11 @@
 #include <engine/core/systems/renderSystem.hpp>
 #include <engine/core/systems/collisionSystem.hpp>
 #include <engine/graphics/managers/shaderManager.hpp>
+#include <engine/gameObjects/crosshairRenderer.hpp>
 #include <game/utils/terrainSettings.hpp>
+#include <game/utils/blockTexture.hpp>
 #include <game/world/world.hpp>
+
 
 class MinecraftScene : public Scene {
 public:
@@ -46,7 +49,7 @@ private:
     bool isColliding(const glm::vec3& position);
     float calculateGroundDistance(const glm::vec3& position);
     glm::vec3 handleCollision(const glm::vec3& currentPos, const glm::vec3& newPos);
-
+    bool raycastShoot(float maxDistance, glm::ivec3& hitBlockPos, glm::ivec3& hitNormal);
     // Scene objects
     std::vector<std::unique_ptr<GameObject>> objects;
     World world;
@@ -56,6 +59,9 @@ private:
     std::unique_ptr<CollisionSystem> collisionSystem;
     std::unique_ptr<RenderSystem> renderSystem;
     std::unique_ptr<InputManager> input;
+
+    CrosshairRenderer* crosshairRenderer = nullptr;
+
 
     // Skybox
     std::vector<std::string> faces = {
@@ -77,6 +83,9 @@ private:
     float cameraHeight = 1.8f;
     float cameraRadius = 0.3f;
 
+    std::vector<BlockType> availableBlocks;
+    int selectedBlockIndex = 0;
+    BlockType selectedBlock = BlockType::Stone;
     // Movement parameters
     bool isFirstTime = true;
     bool isPaused = true;
