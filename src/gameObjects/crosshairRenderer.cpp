@@ -30,7 +30,6 @@ void CrosshairRenderer::loadTexture(const std::string& path) {
     int width, height, channels;
     unsigned char* data = stbi_load(path.c_str(), &width, &height, &channels, STBI_rgb_alpha);
     if (data) {
-        std::cout << "Loaded crosshair texture: " << path << " (" << width << "x" << height << ")" << std::endl;
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
         glGenerateMipmap(GL_TEXTURE_2D);
     } else {

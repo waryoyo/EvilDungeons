@@ -34,6 +34,7 @@ public:
     glm::vec3 getFront() const;
     glm::vec3 getUp() const;
     float getPlayerEyeHeight() const;
+    void setPlayerEyeHeight(float height);
     bool getIsActive() const;
     void setIsActive(bool isActive);
     void setPosition(const glm::vec3& pos);

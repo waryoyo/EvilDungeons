@@ -203,12 +203,8 @@ void MinecraftScene::update(float dt)
     }}
 
     if (!isPaused){
-        float speed = 5.0f * dt;
-
-        const auto& camera = objects[0]->getComponent<CameraComponent>();
+        float speed = 5.0f * dt;        const auto& camera = objects[0]->getComponent<CameraComponent>();
         glm::vec3 pos = camera->getPosition();
-        glm::vec3 lowerBodyPos = pos - glm::vec3(0.0f, cameraHeight/2, 0.0f);
-        glm::vec3 feetPos = pos - glm::vec3(0.0f, cameraHeight, 0.0f);
 
         glm::vec3 front = camera->getFront();
         glm::vec3 up = camera->getUp();
@@ -217,10 +213,19 @@ void MinecraftScene::update(float dt)
         glm::vec3 frontHorizontal = glm::normalize(glm::vec3(front.x, 0.0f, front.z));
         glm::vec3 rightHorizontal = glm::normalize(glm::vec3(right.x, 0.0f, right.z));
 
-        glm::vec3 cameraDelta = glm::vec3(0.0f);
-
-        if (input->isKeyDown(GLFW_KEY_LEFT_CONTROL)) {
+        glm::vec3 cameraDelta = glm::vec3(0.0f);        if (input->isKeyDown(GLFW_KEY_LEFT_CONTROL)) {
             speed *= 2.0f;
+        }
+
+        // Handle crouching
+        bool wasIsCrouching = isCrouching;
+        isCrouching = input->isKeyDown(GLFW_KEY_LEFT_SHIFT) && !isUnderWater;
+        
+        if (isCrouching) {
+            speed *= crouchSpeedMultiplier;
+            camera->setPlayerEyeHeight(crouchEyeHeight);
+        } else {
+            camera->setPlayerEyeHeight(normalEyeHeight);
         }
 
         if (input->isKeyDown(GLFW_KEY_W)) cameraDelta += speed * frontHorizontal;
@@ -247,23 +252,47 @@ void MinecraftScene::update(float dt)
                 // Example: remove the block
                 world.setBlock(hitBlock.x, hitBlock.y, hitBlock.z, BlockType::Air);
             }
-        }
-
-        if (input->wasMouseButtonPressed(GLFW_MOUSE_BUTTON_LEFT)) {
+        }        if (input->wasMouseButtonPressed(GLFW_MOUSE_BUTTON_LEFT)) {
             glm::ivec3 hitBlock, hitNormal;
             if (raycastShoot(6.0f, hitBlock, hitNormal)) {
                 glm::ivec3 placePos = hitBlock + hitNormal * glm::ivec3(-1);
-                world.setBlock(placePos.x, placePos.y, placePos.z, selectedBlock);
+                  // Check if placing a block at this position would collide with the player
+                bool wouldCollideWithPlayer = false;
+                
+                // Player dimensions (same as collision system)
+                const float playerWidth = 0.6f;
+                const float currentPlayerHeight = camera->getPlayerEyeHeight(); // Use current eye height
+                const float collisionBuffer = 0.05f;
+                
+                // Calculate player's current bounding box (feet-based position)
+                glm::vec3 basePos = pos - glm::vec3(0.0f, camera->getPlayerEyeHeight(), 0.0f);
+                glm::vec3 playerCenter = basePos + glm::vec3(0.0f, currentPlayerHeight * 0.5f, 0.0f);
+                glm::vec3 playerMin = playerCenter - glm::vec3(playerWidth * 0.5f + collisionBuffer, currentPlayerHeight * 0.5f + collisionBuffer, playerWidth * 0.5f + collisionBuffer);
+                glm::vec3 playerMax = playerCenter + glm::vec3(playerWidth * 0.5f + collisionBuffer, currentPlayerHeight * 0.5f + collisionBuffer, playerWidth * 0.5f + collisionBuffer);
+                
+                // Block bounding box at the place position
+                glm::vec3 blockMin(static_cast<float>(placePos.x), static_cast<float>(placePos.y), static_cast<float>(placePos.z));
+                glm::vec3 blockMax = blockMin + glm::vec3(1.0f);
+                
+                // Check if player bounding box intersects with the block position
+                wouldCollideWithPlayer = (playerMin.x < blockMax.x && playerMax.x > blockMin.x) &&
+                                       (playerMin.y < blockMax.y && playerMax.y > blockMin.y) &&
+                                       (playerMin.z < blockMax.z && playerMax.z > blockMin.z);
+                
+                // Only place the block if it wouldn't collide with the player
+                if (!wouldCollideWithPlayer) {
+                    world.setBlock(placePos.x, placePos.y, placePos.z, selectedBlock);
+                }
             }
-        }
-
+        }// Calculate positions for water detection
+        glm::vec3 feetPos = pos - glm::vec3(0.0f, camera->getPlayerEyeHeight(), 0.0f);
+        glm::vec3 lowerBodyPos = pos - glm::vec3(0.0f, camera->getPlayerEyeHeight() * 0.5f, 0.0f);
 
         BlockType lowerBodyBlock = world.getBlock(
             static_cast<int>(std::floor(lowerBodyPos.x)),
             static_cast<int>(std::floor(lowerBodyPos.y)),
             static_cast<int>(std::floor(lowerBodyPos.z))
         );
-
 
         BlockType feetBlock = world.getBlock(
             static_cast<int>(std::floor(feetPos.x)),
@@ -281,13 +310,11 @@ void MinecraftScene::update(float dt)
         bool isFeetUnderWater = (feetBlock == BlockType::Water);
         isHeadUnderWater = (eyeBodyBlock == BlockType::Water);
 
-        isUnderWater = isLowerBodyUnderWater;
-
-        if (input->wasKeyPressed(GLFW_KEY_SPACE)) {
-            if (isOnGround && !isFeetUnderWater) {
+        isUnderWater = isLowerBodyUnderWater;        if (input->wasKeyPressed(GLFW_KEY_SPACE)) {
+            if (isOnGround && !isFeetUnderWater && !isCrouching) {
                 velocity.y = jumpSpeed;
                 isOnGround = false;
-            } else if (!isHeadUnderWater && isFeetUnderWater) {
+            } else if (!isHeadUnderWater && isFeetUnderWater && !isCrouching) {
                 velocity.y = jumpSpeed * 1.1f;
                 isOnGround = false;
             }
@@ -315,34 +342,45 @@ void MinecraftScene::update(float dt)
 
         bool inputMoving = input->isKeyDown(GLFW_KEY_W) || input->isKeyDown(GLFW_KEY_A) ||
                         input->isKeyDown(GLFW_KEY_S) || input->isKeyDown(GLFW_KEY_D);
-        isMoving = (inputMoving && isOnGround);
-
-        // Predict new position
+        isMoving = (inputMoving && isOnGround);        // Predict new position
         glm::vec3 newPos = pos + cameraDelta;
         world.ensureChunksNear(newPos);
+        
+        // Calculate camera base position (feet position)
+        glm::vec3 basePos = pos - glm::vec3(0.0f, camera->getPlayerEyeHeight(), 0.0f) - prevBobOffsetVec;
+        glm::vec3 attemptedBasePos = basePos + cameraDelta;        // Player collision box (slightly smaller than a full block)
+        const float playerWidth = 0.6f;  // Player width in blocks
+        const float currentPlayerHeight = camera->getPlayerEyeHeight(); // Use current eye height for collision
+        const float collisionBuffer = 0.05f; // Small buffer to prevent clipping through blocks
+        const glm::vec3 playerHalfExtents(playerWidth * 0.5f + collisionBuffer, currentPlayerHeight * 0.5f + collisionBuffer, playerWidth * 0.5f + collisionBuffer);        // Function to check if a position collides with blocks
+        auto checkCollision = [&](const glm::vec3& testPos) -> bool {
+            // Get the player's bounding box at the test position
+            glm::vec3 playerCenter = testPos + glm::vec3(0.0f, currentPlayerHeight * 0.5f, 0.0f);
+            glm::vec3 minPos = playerCenter - playerHalfExtents;
+            glm::vec3 maxPos = playerCenter + playerHalfExtents;
 
-        // Collision handling
-        const glm::vec3 cameraHalfExtents(0.3f, 0.9f, 0.3f);
+            // Check all blocks that the player might intersect with
+            int minBlockX = static_cast<int>(std::floor(minPos.x));
+            int maxBlockX = static_cast<int>(std::floor(maxPos.x));
+            int minBlockY = static_cast<int>(std::floor(minPos.y));
+            int maxBlockY = static_cast<int>(std::floor(maxPos.y));
+            int minBlockZ = static_cast<int>(std::floor(minPos.z));
+            int maxBlockZ = static_cast<int>(std::floor(maxPos.z));
 
-        auto isColliding = [&](const glm::vec3& testPos) -> bool {
-            glm::ivec3 minBlock = glm::floor(testPos - cameraHalfExtents);
-            glm::ivec3 maxBlock = glm::floor(testPos + cameraHalfExtents);
-
-            for (int x = minBlock.x; x <= maxBlock.x; x++) {
-                for (int y = minBlock.y; y <= maxBlock.y; y++) {
-                    for (int z = minBlock.z; z <= maxBlock.z; z++) {
+            for (int x = minBlockX; x <= maxBlockX; x++) {
+                for (int y = minBlockY; y <= maxBlockY; y++) {
+                    for (int z = minBlockZ; z <= maxBlockZ; z++) {
                         BlockType block = world.getBlock(x, y, z);
                         if (block != BlockType::Air && block != BlockType::Water) {
-                            glm::vec3 blockMin(x, y, z);
+                            // Check if player bounding box intersects with this block
+                            glm::vec3 blockMin(static_cast<float>(x), static_cast<float>(y), static_cast<float>(z));
                             glm::vec3 blockMax = blockMin + glm::vec3(1.0f);
-                            glm::vec3 camMin = testPos - cameraHalfExtents;
-                            glm::vec3 camMax = testPos + cameraHalfExtents;
 
-                            bool overlap = (camMin.x < blockMax.x && camMax.x > blockMin.x) &&
-                                        (camMin.y < blockMax.y && camMax.y > blockMin.y) &&
-                                        (camMin.z < blockMax.z && camMax.z > blockMin.z);
+                            bool intersects = (minPos.x < blockMax.x && maxPos.x > blockMin.x) &&
+                                            (minPos.y < blockMax.y && maxPos.y > blockMin.y) &&
+                                            (minPos.z < blockMax.z && maxPos.z > blockMin.z);
 
-                            if (overlap) return true;
+                            if (intersects) return true;
                         }
                     }
                 }
@@ -350,60 +388,74 @@ void MinecraftScene::update(float dt)
             return false;
         };
 
-        // Simple axis separation for collision resolution
-        glm::vec3 finalPos = pos;
+        // Test movement along each axis separately
+        glm::vec3 finalPos = basePos;        // Edge prevention function for crouching
+        auto wouldFallOffEdge = [&](const glm::vec3& testPos) -> bool {
+            if (!isCrouching || !isOnGround) return false;
+            
+            // Check if there's a block at the same Y level that connects the current position to the new position
+            int currentBlockY = static_cast<int>(std::floor(basePos.y - 0.1f)); // Block the player is standing on
+            int newBlockX = static_cast<int>(std::floor(testPos.x));
+            int newBlockZ = static_cast<int>(std::floor(testPos.z));
+            
+            // Check if there's a solid block at the same Y level at the new position
+            BlockType blockAtNewPos = world.getBlock(newBlockX, currentBlockY, newBlockZ);
+            return (blockAtNewPos == BlockType::Air || blockAtNewPos == BlockType::Water);
+        };
 
-        // X
-        glm::vec3 tryX = finalPos + glm::vec3(cameraDelta.x, 0.0f, 0.0f);
-        if (!isColliding(tryX)) finalPos.x = tryX.x;
+        // Test X movement with edge prevention
+        glm::vec3 testX = basePos;
+        testX.x = attemptedBasePos.x;
+        if (!checkCollision(testX) && !wouldFallOffEdge(testX)) {
+            finalPos.x = attemptedBasePos.x;
+        }
 
-        // Y
-        glm::vec3 tryY = finalPos + glm::vec3(0.0f, cameraDelta.y, 0.0f);
-        if (!isColliding(tryY)) {
-            finalPos.y = tryY.y;
+        // Test Z movement with edge prevention
+        glm::vec3 testZ = finalPos;
+        testZ.z = attemptedBasePos.z;
+        if (!checkCollision(testZ) && !wouldFallOffEdge(testZ)) {
+            finalPos.z = attemptedBasePos.z;
+        }
+
+        // Handle vertical movement and ground collision
+        glm::vec3 testY = finalPos;
+        testY.y = attemptedBasePos.y;
+        
+        if (!checkCollision(testY)) {
+            // No collision - allow the movement
+            finalPos.y = attemptedBasePos.y;
+            isOnGround = false;
         } else {
-            if (velocity.y < 0.0f) {
+            // Collision detected - handle ground collision
+            if (velocity.y <= 0) {
+                // Player is falling or stationary - find the ground level
+                float groundY = finalPos.y;
+                
+                // Search upward to find the highest non-colliding position
+                for (float testHeight = finalPos.y; testHeight < finalPos.y + 2.0f; testHeight += 0.1f) {
+                    glm::vec3 testGroundPos = finalPos;
+                    testGroundPos.y = testHeight;
+                    
+                    if (!checkCollision(testGroundPos)) {
+                        groundY = testHeight;
+                        break;
+                    }
+                }
+                
+                finalPos.y = groundY;
                 isOnGround = true;
+                velocity.y = 0;
+            } else {
+                // Player is jumping up - stop at current position
+                velocity.y = 0;
             }
-            velocity.y = 0.0f;
         }
 
-        // Z
-        glm::vec3 tryZ = finalPos + glm::vec3(0.0f, 0.0f, cameraDelta.z);
-        if (!isColliding(tryZ)) finalPos.z = tryZ.z;
-
-        // Apply movement
-        camera->setPosition(finalPos);
-
-
-
-    glm::vec3 basePos = pos - glm::vec3(0.0f, camera->getPlayerEyeHeight(), 0.0f) - prevBobOffsetVec;
-    glm::vec3 attempt = basePos + cameraDelta;
-
-    glm::vec3 testX = basePos; testX.x = attempt.x;
-    if (!isColliding(testX)) basePos.x = attempt.x;
-
-    glm::vec3 testY = basePos; testY.y = attempt.y;
-    if (!isColliding(testY)) { 
-        basePos.y = attempt.y;
-        isOnGround = false;
-    } else {
-        // Collided vertically
-        if (velocity.y < 0) {
-            // Landed on ground
-            isOnGround = true;
-        }
-        velocity.y = 0; // Stop vertical movement on collision
-    }
-
-    glm::vec3 testZ = basePos; testZ.z = attempt.z;
-    if (!isColliding(testZ)) basePos.z = attempt.z;
-    
+        basePos = finalPos;
+    // Handle head bobbing
     bobOffsetVec = glm::vec3(0.0f);
-
     cameraBasePosition = basePos;
     
-
     if (isMoving) {
         bobTime += dt * bobSpeed;
         float bobOffset = sin(bobTime) * bobAmount;
@@ -412,7 +464,9 @@ void MinecraftScene::update(float dt)
         bobTime = 0.0f;
     }
     prevBobOffsetVec = bobOffsetVec;
-    camera->setPosition(cameraBasePosition + bobOffsetVec + glm::vec3(0.0f, camera->getPlayerEyeHeight(), 0.0f));
+    
+    // Set final camera position: base position + eye height + bob offset
+    camera->setPosition(cameraBasePosition + glm::vec3(0.0f, camera->getPlayerEyeHeight(), 0.0f) + bobOffsetVec);
     world.ensureChunksNear(basePos);
 
     }

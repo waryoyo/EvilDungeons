@@ -60,6 +60,11 @@ glm::mat4 CameraComponent::getView() const {
 float CameraComponent::getPlayerEyeHeight() const {
     return playerEyeHeight;
 }
+
+void CameraComponent::setPlayerEyeHeight(float height) {
+    playerEyeHeight = height;
+}
+
 glm::vec3 CameraComponent::getPosition() const {
     return pos;
 }

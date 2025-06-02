@@ -74,13 +74,10 @@ private:
     };
     unsigned int skyboxVAO = 0;
     unsigned int skyboxVBO = 0;
-    unsigned int cubemapTexture = 0;
-
-    // Camera control
+    unsigned int cubemapTexture = 0;    // Camera control
     glm::vec3 cameraBasePosition;
     glm::vec3 prevBobOffsetVec;
     glm::vec3 bobOffsetVec;
-    float cameraHeight = 1.8f;
     float cameraRadius = 0.3f;
 
     std::vector<BlockType> availableBlocks;
@@ -104,6 +101,13 @@ private:
 
     bool isUnderWater = false;
     bool isHeadUnderWater = false;
+    
+    // Crouching functionality
+    bool isCrouching = false;
+    float normalEyeHeight = 1.8f;
+    float crouchEyeHeight = 1.35f;
+    float crouchSpeedMultiplier = 0.3f;
+    
     // Window dimensions
     int screenWidth = 1280;
     int screenHeight = 720;
