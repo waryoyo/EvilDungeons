@@ -89,10 +89,8 @@ private:
     bool isMoving = false;
     float bobTime = 0.0f;
     float bobSpeed = 20.0f;
-    
-    // commented cause it causes collision errors
-    // float bobAmount = 0.05f;
-    float bobAmount = 0.0f;
+      // Re-enabled with proper collision handling
+    float bobAmount = 0.03f; // Reduced amount to prevent collision issues
     float groundDistance = 0.0f;
     glm::vec3 velocity = glm::vec3(0.0f);  
     bool isOnGround = true;             

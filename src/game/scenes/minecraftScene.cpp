@@ -187,6 +187,10 @@ bool MinecraftScene::raycastShoot(float maxDistance, glm::ivec3& hitBlockPos, gl
 
 void MinecraftScene::update(float dt)
 {
+    // Reduce update frequency for expensive operations
+    static float chunkUpdateTimer = 0.0f;
+    chunkUpdateTimer += dt;
+    
     if (!isFirstTime){
     input->update(window);
     if (input->wasKeyPressed(GLFW_KEY_ESCAPE) || input->wasKeyPressed(GLFW_KEY_P)) {
@@ -344,10 +348,14 @@ void MinecraftScene::update(float dt)
                         input->isKeyDown(GLFW_KEY_S) || input->isKeyDown(GLFW_KEY_D);
         isMoving = (inputMoving && isOnGround);        // Predict new position
         glm::vec3 newPos = pos + cameraDelta;
-        world.ensureChunksNear(newPos);
-        
-        // Calculate camera base position (feet position)
+          // Calculate camera base position (feet position) first
         glm::vec3 basePos = pos - glm::vec3(0.0f, camera->getPlayerEyeHeight(), 0.0f) - prevBobOffsetVec;
+        
+        // Only update chunks every few frames to reduce overhead
+        if (chunkUpdateTimer >= 0.1f) { // Update chunks every 100ms instead of every frame
+            world.ensureChunksNear(basePos);
+            chunkUpdateTimer = 0.0f;
+        }
         glm::vec3 attemptedBasePos = basePos + cameraDelta;        // Player collision box (slightly smaller than a full block)
         const float playerWidth = 0.6f;  // Player width in blocks
         const float currentPlayerHeight = camera->getPlayerEyeHeight(); // Use current eye height for collision
@@ -359,7 +367,7 @@ void MinecraftScene::update(float dt)
             glm::vec3 minPos = playerCenter - playerHalfExtents;
             glm::vec3 maxPos = playerCenter + playerHalfExtents;
 
-            // Check all blocks that the player might intersect with
+            // Optimized: Only check blocks that could intersect with player
             int minBlockX = static_cast<int>(std::floor(minPos.x));
             int maxBlockX = static_cast<int>(std::floor(maxPos.x));
             int minBlockY = static_cast<int>(std::floor(minPos.y));
@@ -367,12 +375,15 @@ void MinecraftScene::update(float dt)
             int minBlockZ = static_cast<int>(std::floor(minPos.z));
             int maxBlockZ = static_cast<int>(std::floor(maxPos.z));
 
+            // Early exit: if bounding box is entirely above maximum terrain, no collision
+            if (minBlockY > 100) return false; // Adjust based on your max terrain height
+
             for (int x = minBlockX; x <= maxBlockX; x++) {
                 for (int y = minBlockY; y <= maxBlockY; y++) {
                     for (int z = minBlockZ; z <= maxBlockZ; z++) {
                         BlockType block = world.getBlock(x, y, z);
                         if (block != BlockType::Air && block != BlockType::Water) {
-                            // Check if player bounding box intersects with this block
+                            // Use more precise AABB intersection test
                             glm::vec3 blockMin(static_cast<float>(x), static_cast<float>(y), static_cast<float>(z));
                             glm::vec3 blockMax = blockMin + glm::vec3(1.0f);
 

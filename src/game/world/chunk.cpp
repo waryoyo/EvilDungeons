@@ -73,21 +73,21 @@ const glm::ivec3 vAxes[6] = {
 };
 
 bool Chunk::isAir(glm::ivec3 pos) const {
-    if (pos.x < 0 || pos.x >= SIZE || pos.y < 0 || pos.y >= SIZE || pos.z < 0 || pos.z >= SIZE)
-        return true; // outside chunk treated as air (or you might want to check neighboring chunks)
+    if (pos.x < 0 || pos.x >= CHUNK_SIZE || pos.y < 0 || pos.y >= 128 || pos.z < 0 || pos.z >= CHUNK_SIZE)
+        return true; // outside chunk treated as air (should check neighboring chunks in production)
     return blocks[pos.x][pos.y][pos.z] == BlockType::Air;
 }
 
 bool Chunk::isTransparent(glm::ivec3 pos) const {
-    if (pos.x < 0 || pos.x >= SIZE || pos.y < 0 || pos.y >= SIZE || pos.z < 0 || pos.z >= SIZE)
-        return true; // or false depending on your world setup
+    if (pos.x < 0 || pos.x >= CHUNK_SIZE || pos.y < 0 || pos.y >= 128 || pos.z < 0 || pos.z >= CHUNK_SIZE)
+        return true; // outside chunk treated as transparent
     auto block = blocks[pos.x][pos.y][pos.z];
     return block == BlockType::Air || block == BlockType::Water;
 }
 
 
 
-Chunk::Chunk(glm::ivec3 position) : position(position), atlas("terrain.png")
+Chunk::Chunk(glm::ivec3 position) : position(position)
 {
     std::memset(blocks, 0, sizeof(blocks));
     if (!ShaderManager::Get("worldShader"))
@@ -139,13 +139,13 @@ void Chunk::generate() {
     baseNoise.SetFrequency(gTerrainSettings.noiseFrequency);
     mountainNoise.SetFrequency(gTerrainSettings.mountainFrequency);
 
-    int worldX0 = position.x * SIZE;
+    int worldX0 = position.x * CHUNK_SIZE;
     int worldY0 = 0;
-    int worldZ0 = position.z * SIZE;
+    int worldZ0 = position.z * CHUNK_SIZE;
     int waterLevel = gTerrainSettings.waterLevel;
 
-    for (int x = 0; x < SIZE; x++) {
-        for (int z = 0; z < SIZE; z++) {
+    for (int x = 0; x < CHUNK_SIZE; x++) {
+        for (int z = 0; z < CHUNK_SIZE; z++) {
             float worldX = float(worldX0 + x);
             float worldZ = float(worldZ0 + z);
 
@@ -213,11 +213,11 @@ std::vector<Quad> Chunk::greedyMesh(std::vector<uint32_t>& data) {
     if (data[0] != 0)
         std::cout << "hello";
 
-    for (uint32_t row = 0; row < SIZE; row++) {
+    for (uint32_t row = 0; row < CHUNK_SIZE; row++) {
         uint32_t y = 0;
-        while (y < SIZE) {
+        while (y < CHUNK_SIZE) {
             y += std::countr_zero(data[row] >> y);
-            if (y >= SIZE)
+            if (y >= CHUNK_SIZE)
                 break;
 
             uint32_t h = std::countr_one(data[row] >> y);
@@ -225,7 +225,7 @@ std::vector<Quad> Chunk::greedyMesh(std::vector<uint32_t>& data) {
             uint32_t mask = hMask << y;
 
             uint32_t w = 1;
-            while (row + w < SIZE) {
+            while (row + w < CHUNK_SIZE) {
                 uint32_t nextRowBits = (data[row + w] >> y) & hMask;
                 if (nextRowBits != hMask) break;
 
@@ -287,8 +287,14 @@ void Chunk::addVerticesIndices(const std::vector<Quad>& quads,
 }
 
 
-void Chunk::buildMesh()
+void Chunk::buildMesh(LODLevel lod)
 {
+    // Initialize atlas on main thread if not already done
+    if (!atlasInitialized) {
+        atlas = std::make_unique<Texture>("terrain.png");
+        atlasInitialized = true;
+    }
+
     const float invTileU = 16.0f / float(256);
     const float invTileV = 16.0f / float(256);
 
@@ -301,27 +307,39 @@ void Chunk::buildMesh()
     std::vector<uint32_t> transparentIndices;
     uint32_t transparentIndexOffset = 0;
 
-    for (int x = 0; x < SIZE; ++x) {
+    // Pre-reserve memory to avoid reallocations
+    opaqueVertices.reserve(CHUNK_SIZE * CHUNK_SIZE * 128 * 6 * 4); // Worst case estimate
+    opaqueIndices.reserve(CHUNK_SIZE * CHUNK_SIZE * 128 * 6 * 6);
+    transparentVertices.reserve(CHUNK_SIZE * CHUNK_SIZE * 32 * 6 * 4); // Estimate for water
+    transparentIndices.reserve(CHUNK_SIZE * CHUNK_SIZE * 32 * 6 * 6);    for (int x = 0; x < CHUNK_SIZE; ++x) {
         for (int y = 0; y < 128; ++y) {
-            for (int z = 0; z < SIZE; ++z) {
+            for (int z = 0; z < CHUNK_SIZE; ++z) {
                 glm::ivec3 currentBlockPos(x, y, z);
                 BlockType blockType = getBlock(currentBlockPos);
                 if (blockType == BlockType::Air) continue;
 
-                const auto& tiles = blockTileMap.at(blockType);
-
+                const auto& tiles = blockTileMap.at(blockType);                // Check each face for culling
                 for (int i = 0; i < 6; ++i) {
                     glm::ivec3 faceNormal = directions[i];
                     glm::ivec3 neighborBlockPos = currentBlockPos + faceNormal;
 
-                    bool currentTransparent = isTransparent(currentBlockPos);
-                    bool neighborTransparent = isTransparent(neighborBlockPos);
+                    // Enhanced face culling with better neighbor checking
+                    BlockType neighborType = getNeighborBlock(currentBlockPos, faceNormal);
+                    
+                    // Skip face if neighbor is same opaque block
+                    if (neighborType == blockType && blockType != BlockType::Water) {
+                        continue;
+                    }
+                    
+                    // Skip face if current block is opaque and neighbor is opaque (but different)
+                    if (blockType != BlockType::Water && neighborType != BlockType::Air && neighborType != BlockType::Water) {
+                        continue;
+                    }
 
-                    // Don't cull faces between air and water
-                    if (!currentTransparent && !neighborTransparent) continue; // opaque-opaque
-                    if (currentTransparent && neighborTransparent &&
-                        getBlock(currentBlockPos) == getBlock(neighborBlockPos)) continue; // same transparent blocks
-
+                    // For water blocks, only render faces exposed to air or different block types
+                    if (blockType == BlockType::Water && neighborType == BlockType::Water) {
+                        continue;
+                    }
 
                     // Face should be rendered if:
                     // - current opaque and neighbor transparent (air or water)
@@ -345,7 +363,7 @@ void Chunk::buildMesh()
                     };
 
                     glm::vec3 blockWorldOrigin =
-                        glm::vec3(position * SIZE) +
+                        glm::vec3(position * CHUNK_SIZE) +
                         glm::vec3(currentBlockPos);
 
                     bool isBlockTransparent = (blockType == BlockType::Water);
@@ -451,62 +469,86 @@ void Chunk::buildMesh()
 
 void Chunk::renderOpaque(const RenderContext& context) {
     if (needsMeshUpdate) {
-        buildMesh();
+        buildMesh(currentLOD);
         needsMeshUpdate = false;
     }
 
-    if (!opaqueMesh || !ShaderManager::Get("worldShader")) return;
-
-    auto shader = ShaderManager::Get("worldShader");
-    BinderParams params(shader, glm::mat4(1.0f), context);
-
-    shader->use();
-    shader->setInt("texture_diffuse", 0);
-    shader->setVec3("uCameraPos", context.cameraData.cameraPos);
-    shader->setVec3("uFogColor", glm::vec3(1.0f, 1.0f, 1.0f));
-    shader->setFloat("uFogStart", 100.0f);
-    shader->setFloat("uFogEnd", 160.0f);
-
+    if (!opaqueMesh) return;    // Get shader each time to ensure it's available (ShaderManager should cache this)
+    Shader* worldShader = ShaderManager::Get("worldShader");
+    if (!worldShader) return;
+    
+    worldShader->use();
+    
+    // Batch uniform setting - Fixed shader uniform name to match voxel shader
+    worldShader->setInt("uTexture", 0);  // Changed from "texture_diffuse" to "uTexture"
+    worldShader->setVec3("uCameraPos", context.cameraData.cameraPos);
+    worldShader->setVec3("uFogColor", glm::vec3(1.0f, 1.0f, 1.0f));
+    worldShader->setFloat("uFogStart", 100.0f);
+    worldShader->setFloat("uFogEnd", 160.0f);
+    
+    // Set required matrix uniforms for voxel shader
+    glm::mat4 modelMatrix = glm::mat4(1.0f);  // Identity matrix for world-space chunks
+    glm::mat4 mvp = context.cameraData.VP * modelMatrix;
+    worldShader->setMat4("uMVP", mvp);
+    worldShader->setMat4("uModel", modelMatrix);    // Apply material properties
+    BinderParams params(worldShader, glm::mat4(1.0f), context);
     emissiveBinder->apply(params);
-    atlas.bind(0);
-    opaqueMesh->draw(shader);
+    
+    // Bind texture (atlas should be bound once globally if possible)
+    if (atlas) {
+        atlas->bind(0);
+    }
+    
+    // Ensure we have a valid mesh before drawing
+    if (opaqueMesh) {
+        opaqueMesh->draw(worldShader);
+    }
 }
 
 
 void Chunk::renderTransparent(const RenderContext& context) {
     if (needsMeshUpdate) {
-        buildMesh();
+        buildMesh(currentLOD);
         needsMeshUpdate = false;
     }
 
-    if (!transparentMesh || !ShaderManager::Get("worldShader")) return;
-
-    auto shader = ShaderManager::Get("worldShader");
-    BinderParams params(shader, glm::mat4(1.0f), context);
-
+    if (!transparentMesh) return;    Shader* shader = ShaderManager::Get("worldShader");
+    if (!shader) return;
+    
     shader->use();
-    shader->setInt("texture_diffuse", 0);
+    shader->setInt("uTexture", 0);  // Changed from "texture_diffuse" to "uTexture"
     shader->setVec3("uCameraPos", context.cameraData.cameraPos);
     shader->setVec3("uFogColor", glm::vec3(1.0f, 1.0f, 1.0f));
     shader->setFloat("uFogStart", 100.0f);
     shader->setFloat("uFogEnd", 160.0f);
-
+    
+    // Set required matrix uniforms for voxel shader
+    glm::mat4 modelMatrix = glm::mat4(1.0f);  // Identity matrix for world-space chunks
+    glm::mat4 mvp = context.cameraData.VP * modelMatrix;
+    shader->setMat4("uMVP", mvp);
+    shader->setMat4("uModel", modelMatrix);    BinderParams params(shader, glm::mat4(1.0f), context);
     emissiveBinder->apply(params);
-    atlas.bind(0);
-    transparentMesh->draw(shader);
+    
+    if (atlas) {
+        atlas->bind(0);
+    }
+    
+    if (transparentMesh) {
+        transparentMesh->draw(shader);
+    }
 }
 
 
 
 BlockType Chunk::getBlock(glm::ivec3 pos) const
 {
-    if (pos.x < 0 || pos.x >= SIZE || pos.y < 0 || pos.y >= 128 || pos.z < 0 || pos.z >= SIZE)
+    if (pos.x < 0 || pos.x >= CHUNK_SIZE || pos.y < 0 || pos.y >= 128 || pos.z < 0 || pos.z >= CHUNK_SIZE)
         return BlockType::Air;
     return blocks[pos.x][pos.y][pos.z];
 }
 
 void Chunk::setBlock(const glm::ivec3& pos, BlockType type) {
-    if (pos.x < 0 || pos.x >= SIZE || pos.y < 0 || pos.y >= 128 || pos.z < 0 || pos.z >= SIZE)
+    if (pos.x < 0 || pos.x >= CHUNK_SIZE || pos.y < 0 || pos.y >= 128 || pos.z < 0 || pos.z >= CHUNK_SIZE)
         return;
 
     blocks[pos.x][pos.y][pos.z] = type;
@@ -528,4 +570,23 @@ int Chunk::getTopBlockY(int x, int z) const {
         }
     }
     return -1;
+}
+
+// Function to get neighbor block type, considering chunk boundaries
+// For now, we treat out-of-chunk neighbors as air to avoid incorrect culling
+// TODO: Implement proper inter-chunk neighbor checking for better performance
+BlockType Chunk::getNeighborBlock(const glm::ivec3& pos, const glm::ivec3& offset) const {
+    glm::ivec3 neighborPos = pos + offset;
+    
+    // If neighbor is within this chunk, get it directly
+    if (neighborPos.x >= 0 && neighborPos.x < CHUNK_SIZE && 
+        neighborPos.y >= 0 && neighborPos.y < 128 && 
+        neighborPos.z >= 0 && neighborPos.z < CHUNK_SIZE) {
+        return blocks[neighborPos.x][neighborPos.y][neighborPos.z];
+    }
+    
+    // For neighbors outside chunk boundaries, treat as air for now
+    // This ensures faces on chunk edges are rendered properly
+    // In a production system, you'd query the neighboring chunk
+    return BlockType::Air;
 }
