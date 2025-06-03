@@ -20,7 +20,7 @@ public:
     CameraComponent(GameObject* owner,
         GLFWwindow* window,
         InputManager* input,
-        float fov = 45.0f,
+        float fov = 50.0f,
         float aspect = 1280.0f / 720.0f,
         float near = 0.1f,
         float far = 250.0f,

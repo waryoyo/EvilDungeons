@@ -45,6 +45,9 @@ public:
 	// Returns a pointer to the center chunk (the one at lastCenter)
 	Chunk* getCenterChunk();
 
+	// Allow external systems to force chunk reloads
+	void forceChunkReload() { lastCenter = glm::ivec3(INT_MIN, 0, INT_MIN); }
+
 private:
 	void loadChunk(const glm::ivec3& chunkCoords);
 	void unloadChunk(const glm::ivec3& chunkCoords);

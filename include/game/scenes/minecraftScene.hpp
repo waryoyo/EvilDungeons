@@ -100,6 +100,8 @@ private:
     bool isUnderWater = false;
     bool isHeadUnderWater = false;
     
+    int oldHorizontalRadius = 0;
+
     // Crouching functionality
     bool isCrouching = false;
     float normalEyeHeight = 1.8f;

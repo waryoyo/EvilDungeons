@@ -205,9 +205,18 @@ void MinecraftScene::update(float dt)
             }
         }
     }}
-
+        if (oldHorizontalRadius != gTerrainSettings.horizontalRadius){
+            // Reset lastCenter to force chunk reload on render distance change
+            world.forceChunkReload();
+            glm::vec3 pos = objects[0]->getComponent<CameraComponent>()->getPosition();
+            world.ensureChunksNear(pos);
+        }
+        oldHorizontalRadius = gTerrainSettings.horizontalRadius;
+        
     if (!isPaused){
-        float speed = 5.0f * dt;        const auto& camera = objects[0]->getComponent<CameraComponent>();
+
+        float speed = 5.0f * dt;
+        const auto& camera = objects[0]->getComponent<CameraComponent>();
         glm::vec3 pos = camera->getPosition();
 
         glm::vec3 front = camera->getFront();
@@ -352,7 +361,7 @@ void MinecraftScene::update(float dt)
         glm::vec3 basePos = pos - glm::vec3(0.0f, camera->getPlayerEyeHeight(), 0.0f) - prevBobOffsetVec;
         
         // Only update chunks every few frames to reduce overhead
-        if (chunkUpdateTimer >= 0.1f) { // Update chunks every 100ms instead of every frame
+        if (chunkUpdateTimer >= 0.2f) { // Update chunks every 200ms instead of every frame
             world.ensureChunksNear(basePos);
             chunkUpdateTimer = 0.0f;
         }
@@ -616,6 +625,12 @@ void MinecraftScene::renderPauseMenu() {
             world.generate(); // or your own method to regenerate terrain
             if (auto camera = objects[0]->getComponent<CameraComponent>()) {
                 camera->setPosition(glm::vec3(0.0f, 70.0f, 3.0f));
+            }
+        }
+        
+        if (ImGui::Button("Reposition player upwards", ImVec2(-FLT_MIN, 0))) {
+            if (auto camera = objects[0]->getComponent<CameraComponent>()) {
+                camera->setPosition(camera->getPosition() + glm::vec3(0.0f, 70.0f, 0.0f));
             }
         }
 
