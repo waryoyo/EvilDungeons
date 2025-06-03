@@ -5,6 +5,8 @@ struct TerrainSettings {
     float mountainFrequency = 0.0045f;
     int maxTerrainHeight = 80;
     int waterLevel = 20;
+    int horizontalRadius = 12;  // Chunk render distance
+    
 };
 
 inline TerrainSettings gTerrainSettings;

@@ -9,6 +9,7 @@
 
 #include <game/world/chunk.hpp>
 #include <game/utils/types.hpp>
+#include <game/utils/terrainSettings.hpp>
 
 struct Vec3Hash {
     size_t operator()(const glm::ivec3& v) const {
@@ -28,7 +29,6 @@ class Chunk;
 class World {
 public:
 	static constexpr int CHUNK_SIZE = 32;
-	static constexpr int HORIZONTAL_RADIUS = 6;
 
 	std::unordered_map<glm::ivec3, std::unique_ptr<Chunk>, Vec3Hash> chunks;
 

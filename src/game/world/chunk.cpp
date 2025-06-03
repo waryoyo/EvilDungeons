@@ -1,4 +1,5 @@
 #include <game/world/chunk.hpp>
+#include <game/world/world.hpp>
 
 #include <engine/graphics/renderable/IRenderable.hpp>
 #include <engine/graphics/renderable/MeshRenderable.hpp>
@@ -87,7 +88,7 @@ bool Chunk::isTransparent(glm::ivec3 pos) const {
 
 
 
-Chunk::Chunk(glm::ivec3 position) : position(position)
+Chunk::Chunk(glm::ivec3 position, World* world) : position(position), world(world)
 {
     std::memset(blocks, 0, sizeof(blocks));
     if (!ShaderManager::Get("worldShader"))
@@ -478,14 +479,15 @@ void Chunk::renderOpaque(const RenderContext& context) {
     if (!worldShader) return;
     
     worldShader->use();
-    
+    float fogStart = (gTerrainSettings.horizontalRadius - 3) * CHUNK_SIZE; // Adjusted for chunk size
+    float fogEnd = (gTerrainSettings.horizontalRadius - 1) * CHUNK_SIZE; // Adjusted for chunk size
     // Batch uniform setting - Fixed shader uniform name to match voxel shader
     worldShader->setInt("uTexture", 0);  // Changed from "texture_diffuse" to "uTexture"
     worldShader->setVec3("uCameraPos", context.cameraData.cameraPos);
     worldShader->setVec3("uFogColor", glm::vec3(1.0f, 1.0f, 1.0f));
-    worldShader->setFloat("uFogStart", 100.0f);
-    worldShader->setFloat("uFogEnd", 160.0f);
-    
+    worldShader->setFloat("uFogStart", fogStart);
+    worldShader->setFloat("uFogEnd", fogEnd);
+
     // Set required matrix uniforms for voxel shader
     glm::mat4 modelMatrix = glm::mat4(1.0f);  // Identity matrix for world-space chunks
     glm::mat4 mvp = context.cameraData.VP * modelMatrix;
@@ -514,14 +516,16 @@ void Chunk::renderTransparent(const RenderContext& context) {
 
     if (!transparentMesh) return;    Shader* shader = ShaderManager::Get("worldShader");
     if (!shader) return;
-    
+
+    float fogStart = (gTerrainSettings.horizontalRadius - 3) * CHUNK_SIZE; // Adjusted for chunk size
+    float fogEnd = (gTerrainSettings.horizontalRadius - 1) * CHUNK_SIZE; // Adjusted for chunk size
     shader->use();
     shader->setInt("uTexture", 0);  // Changed from "texture_diffuse" to "uTexture"
     shader->setVec3("uCameraPos", context.cameraData.cameraPos);
     shader->setVec3("uFogColor", glm::vec3(1.0f, 1.0f, 1.0f));
-    shader->setFloat("uFogStart", 100.0f);
-    shader->setFloat("uFogEnd", 160.0f);
-    
+    shader->setFloat("uFogStart", fogStart);
+    shader->setFloat("uFogEnd", fogEnd);
+
     // Set required matrix uniforms for voxel shader
     glm::mat4 modelMatrix = glm::mat4(1.0f);  // Identity matrix for world-space chunks
     glm::mat4 mvp = context.cameraData.VP * modelMatrix;
@@ -573,8 +577,7 @@ int Chunk::getTopBlockY(int x, int z) const {
 }
 
 // Function to get neighbor block type, considering chunk boundaries
-// For now, we treat out-of-chunk neighbors as air to avoid incorrect culling
-// TODO: Implement proper inter-chunk neighbor checking for better performance
+// Now properly queries neighboring chunks for better face culling
 BlockType Chunk::getNeighborBlock(const glm::ivec3& pos, const glm::ivec3& offset) const {
     glm::ivec3 neighborPos = pos + offset;
     
@@ -585,8 +588,13 @@ BlockType Chunk::getNeighborBlock(const glm::ivec3& pos, const glm::ivec3& offse
         return blocks[neighborPos.x][neighborPos.y][neighborPos.z];
     }
     
-    // For neighbors outside chunk boundaries, treat as air for now
-    // This ensures faces on chunk edges are rendered properly
-    // In a production system, you'd query the neighboring chunk
+    // For neighbors outside chunk boundaries, query the world
+    if (world) {
+        // Convert local chunk position to world coordinates
+        glm::ivec3 worldPos = position * CHUNK_SIZE + neighborPos;
+        return world->getBlock(worldPos.x, worldPos.y, worldPos.z);
+    }
+    
+    // If no world reference, treat as air (backward compatibility)
     return BlockType::Air;
 }

@@ -1,5 +1,4 @@
 #include <game/world/world.hpp>
-#include <game/world/chunk.hpp>
 #include <unordered_set>
 #include <thread>
 #include <mutex>
@@ -22,9 +21,9 @@ World::~World() {
 }
 
 void World::generate() {
-    int rangeX = HORIZONTAL_RADIUS-1;
+    int rangeX = gTerrainSettings.horizontalRadius - 1;
     int rangeY = 0;  // e.g., only generate ground level chunks or modify as needed
-    int rangeZ = HORIZONTAL_RADIUS-1;
+    int rangeZ = gTerrainSettings.horizontalRadius - 1;
 
     for (int x = -rangeX; x <= rangeX; ++x) {
         for (int y = 0; y <= rangeY; ++y) {
@@ -106,8 +105,8 @@ void World::render(const RenderContext& context) const {
     frustum.extractFromMatrix(VP);
     
     // Simple distance-based culling combined with frustum culling
-    const float maxRenderDistance = 200.0f;
-    
+    const float maxRenderDistance = (gTerrainSettings.horizontalRadius + 1) * 32;
+
     // Collect visible chunks using both distance and frustum culling
     std::vector<Chunk*> visibleOpaqueChunks;
     std::vector<Chunk*> visibleTransparentChunks;
@@ -214,10 +213,9 @@ void World::chunkLoaderWorker() {
                 hasWork = true;
             }
         }
-        
-        if (hasWork) {
+          if (hasWork) {
             // Generate chunk data on background thread
-            auto chunk = std::make_unique<Chunk>(chunkToLoad);
+            auto chunk = std::make_unique<Chunk>(chunkToLoad, this);
             chunk->generate();
             
             // Add to main chunk map (this needs to be thread-safe)
@@ -245,15 +243,13 @@ void World::ensureChunksNear(const glm::vec3& playerPos) {
     };
 
     if (center.x == lastCenter.x && center.z == lastCenter.z)
-        return;
-
-    lastCenter = center;
+        return;    lastCenter = center;
     std::unordered_set<glm::ivec3, Vec3Hash> tokeep;
-    tokeep.reserve((2 * HORIZONTAL_RADIUS + 1) * (2 * HORIZONTAL_RADIUS + 1));
+    tokeep.reserve((2 * gTerrainSettings.horizontalRadius + 1) * (2 * gTerrainSettings.horizontalRadius + 1));
 
-    for (int x = -HORIZONTAL_RADIUS; x <= HORIZONTAL_RADIUS; x++) {
-        for (int z = -HORIZONTAL_RADIUS; z <= HORIZONTAL_RADIUS; z++) {
-            if (x * x + z * z <= HORIZONTAL_RADIUS * HORIZONTAL_RADIUS) {
+    for (int x = -gTerrainSettings.horizontalRadius; x <= gTerrainSettings.horizontalRadius; x++) {
+        for (int z = -gTerrainSettings.horizontalRadius; z <= gTerrainSettings.horizontalRadius; z++) {
+            if (x * x + z * z <= gTerrainSettings.horizontalRadius * gTerrainSettings.horizontalRadius) {
                 tokeep.insert({ center.x + x, 0, center.z + z });
             }
         }
@@ -278,7 +274,7 @@ void World::ensureChunksNear(const glm::vec3& playerPos) {
 }
 
 void World::loadChunk(const glm::ivec3& chunkCoords) {
-    auto chunk = std::make_unique<Chunk>(chunkCoords);
+    auto chunk = std::make_unique<Chunk>(chunkCoords, this);
     chunks[chunkCoords] = std::move(chunk);
     chunks[chunkCoords]->generate();
     chunks[chunkCoords]->buildMesh(Chunk::LODLevel::High);

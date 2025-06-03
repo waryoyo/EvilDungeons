@@ -9,7 +9,8 @@ WorldComponent::WorldComponent(GameObject* owner) : Component(owner)
 
 void WorldComponent::generate() {
 
-    glm::ivec3 pos = glm::ivec3(0, 0, 0);    auto chunk = std::make_unique<Chunk>(pos);
+    glm::ivec3 pos = glm::ivec3(0, 0, 0);
+    auto chunk = std::make_unique<Chunk>(pos, nullptr);
     chunks[pos] = std::move(chunk);
     chunks[pos]->generate();
     chunks[pos]->buildMesh(Chunk::LODLevel::High);

@@ -3,6 +3,8 @@
 #include "baseComponent.hpp"
 #include "transformComponent.hpp"
 #include <engine/core/inputManager.hpp>
+#include <game/utils/terrainSettings.hpp>
+
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>

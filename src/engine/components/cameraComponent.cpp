@@ -48,6 +48,7 @@ void CameraComponent::onAttach() {
 void CameraComponent::update(float dt) {
     handleMouse();
     // handleKeyboard(dt);
+    farPlane = (gTerrainSettings.horizontalRadius + 2) * 32;
 }
 
 glm::mat4 CameraComponent::getProjection() const {

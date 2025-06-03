@@ -13,11 +13,14 @@
 static constexpr int CHUNK_SIZE = 32;
 static constexpr int block = 16;
 
+// Forward declaration to avoid circular include
+class World;
+
 class Chunk {
 public:
 
-    Chunk(glm::ivec3 position);
-    ~Chunk();    void generate();
+    Chunk(glm::ivec3 position, World* world = nullptr);
+    ~Chunk();void generate();
 
     void renderOpaque(const RenderContext& context) ;
     void renderTransparent(const RenderContext& context) ;
@@ -48,6 +51,7 @@ public:
 
 private:
     glm::ivec3 position;
+    World* world; // Reference to world for inter-chunk neighbor queries
     BlockType blocks[CHUNK_SIZE][128][CHUNK_SIZE] = { BlockType::Air };
     bool needsMeshUpdate = false;
     std::unique_ptr<IRenderable> mesh;    std::unique_ptr<IRenderable> opaqueMesh;

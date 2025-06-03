@@ -605,11 +605,11 @@ void MinecraftScene::renderPauseMenu() {
         if (ImGui::Button("Exit", ImVec2(-FLT_MIN, 0))) {
             glfwSetWindowShouldClose(window, GLFW_TRUE);
         } 
-        
-        ImGui::SliderFloat("Base Noise Frequency", &gTerrainSettings.noiseFrequency, 0.0001f, 0.1f, "%.5f", ImGuiSliderFlags_Logarithmic);
+          ImGui::SliderFloat("Base Noise Frequency", &gTerrainSettings.noiseFrequency, 0.0001f, 0.1f, "%.5f", ImGuiSliderFlags_Logarithmic);
         ImGui::SliderFloat("Mountain Noise Frequency", &gTerrainSettings.mountainFrequency, 0.0005f, 0.1f, "%.5f", ImGuiSliderFlags_Logarithmic);
         ImGui::SliderInt("Max Terrain Height", &gTerrainSettings.maxTerrainHeight, 16, 256);
         ImGui::SliderInt("Water Level", &gTerrainSettings.waterLevel, 0, 128);
+        ImGui::SliderInt("Render Distance", &gTerrainSettings.horizontalRadius, 2, 32, "%d chunks");
 
 
         if (ImGui::Button("Regenerate World", ImVec2(-FLT_MIN, 0))) {
